@@ -17,21 +17,29 @@ RES = os.path.join(PROJECT_ROOT, "composeApp", "src", "androidMain", "res")
 
 
 # Glyph defined in a normalized 100x100 unit space: the "signal divider" zigzag from the web
-# design system (SignalDivider.kt / .signal-divider in frontend/src/styles.css) — a flat line
-# with periodic sharp spikes, evoking a frequency/heartbeat signal. Simplified to two blips
-# (the web version uses four across a much wider aspect ratio) so it reads clearly at the small
-# sizes launcher icons render at. Stays within the adaptive icon's inner safe zone (~66% of
-# canvas, i.e. roughly the [17,83] range here).
-def glyph_points():
-    return [
-        (15, 50),
-        (32, 50), (38, 32), (44, 68), (50, 50),
-        (67, 50), (73, 32), (79, 68), (85, 50),
-    ]
+# design system (SignalDivider.kt / .signal-divider in frontend/src/styles.css) — combined with
+# the in-app swap button's exchange arrows by terminating the line's two ends in arrowheads
+# instead of rounded caps, rather than cramming two separate motifs side by side (which wouldn't
+# stay legible at launcher-icon sizes). Simplified to a single blip (the web version has four,
+# across a much wider aspect ratio) to leave room for the arrowheads within the adaptive icon's
+# inner safe zone (~66% of canvas, i.e. roughly the [17,83] range here).
+def line_points():
+    return [(28, 50), (40, 50), (46, 30), (54, 70), (60, 50), (72, 50)]
 
 
-def scale_points(points, size):
-    return [(x / 100 * size, y / 100 * size) for x, y in points]
+def left_arrowhead():
+    return [(18, 50), (30, 40), (30, 60)]
+
+
+def right_arrowhead():
+    return [(82, 50), (70, 40), (70, 60)]
+
+
+def scale_points(points, size, cx, cy, canvas_scale):
+    points = [(x / 100 * size, y / 100 * size) for x, y in points]
+    if canvas_scale != 1.0:
+        points = [(cx + (x - cx) * canvas_scale, cy + (y - cy) * canvas_scale) for x, y in points]
+    return points
 
 
 def make_foreground(size, canvas_scale=1.0):
@@ -40,16 +48,21 @@ def make_foreground(size, canvas_scale=1.0):
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     cx = cy = size / 2
-    points = scale_points(glyph_points(), size)
-    if canvas_scale != 1.0:
-        points = [(cx + (x - cx) * canvas_scale, cy + (y - cy) * canvas_scale) for x, y in points]
+
+    def scale(points):
+        return scale_points(points, size, cx, cy, canvas_scale)
+
+    line = scale(line_points())
     width = round(size * 0.09)
-    draw.line(points, fill=PAPER, width=width, joint="curve")
-    # `joint="curve"` rounds internal joins but not the two end caps — draw small circles there
-    # so the stroke ends match the same rounded look instead of being cut off square.
+    draw.line(line, fill=PAPER, width=width, joint="curve")
+    # `joint="curve"` rounds internal joins but not the two end caps — round them off so the
+    # stroke meets the arrowhead bases cleanly instead of being cut off square.
     radius = width / 2
-    for x, y in (points[0], points[-1]):
+    for x, y in (line[0], line[-1]):
         draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=PAPER)
+
+    draw.polygon(scale(left_arrowhead()), fill=PAPER)
+    draw.polygon(scale(right_arrowhead()), fill=PAPER)
     return img
 
 

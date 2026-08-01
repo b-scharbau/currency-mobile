@@ -91,6 +91,16 @@ foreground/background layers under `composeApp/src/androidMain/res/mipmap-*`. Re
 after changing the design; `graphics/icon-512.png` is a plain reference render, not used by the
 app build itself.
 
+### Layout
+
+`App()` measures the available space with `BoxWithConstraints` and switches between a stacked
+`Column` (intro text above the calculator panel) and a side-by-side `Row` (intro text and panel as
+two equal-width columns) based on whether the window is wider than it is tall — landscape on a
+phone, practically. This isn't an Android-specific orientation check; it's a plain width-vs-height
+comparison, so it works the same way on iOS. The switch exists because the stacked layout's content
+(especially the RATE row at the bottom of the panel) doesn't fit within a phone's much shorter
+landscape height — spreading it across two columns needs less vertical space per column instead.
+
 ## Building
 
 Requires JDK 17+ and an Android SDK (compileSdk 35). Point `local.properties` at your SDK

@@ -50,6 +50,8 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
 
 ## Known limitations (first version)
 
-- The JPY → EUR rate is hardcoded (`CurrencyConverter.kt`), not fetched live.
-- Only one currency pair; no currency selection UI yet.
+- The JPY/EUR rate is hardcoded (`CurrencyConverter.kt`), not fetched live — the reverse direction
+  is derived from it (`1 / rate`), not a second hardcoded value.
+- Conversion works in both directions (JPY→EUR and EUR→JPY, swappable), but only this one
+  currency pair; no arbitrary currency selection UI yet.
 - Not yet wired up to the currency-calculator backend API.

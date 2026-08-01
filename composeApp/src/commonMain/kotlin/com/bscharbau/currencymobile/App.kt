@@ -1,11 +1,17 @@
 package com.bscharbau.currencymobile
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,8 +36,13 @@ fun App() {
     CurrencyMobileTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             var amountText by remember { mutableStateOf("1") }
+            var direction by remember { mutableStateOf(CurrencyConverter.Direction.JpyToEur) }
+
+            val fromCurrency = CurrencyConverter.fromCurrency(direction)
+            val toCurrency = CurrencyConverter.toCurrency(direction)
             val amount = amountText.toDoubleOrNull()
-            val converted = amount?.let { CurrencyConverter.convert(it) }
+            val converted = amount?.let { CurrencyConverter.convert(it, direction) }
+            val rate = CurrencyConverter.rate(direction)
 
             Column(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -44,19 +56,21 @@ fun App() {
                 )
 
                 Text(
-                    text = "Convert JPY to EUR",
+                    text = "Convert currencies",
                     style = MaterialTheme.typography.headlineSmall,
                     color = BrandColors.ink,
                     modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
                 )
 
                 Text(
-                    text = "A fixed rate for now — this will use live Frankfurter rates once " +
-                        "connected to the currency-calculator API.",
+                    text = "A fixed JPY/EUR rate for now — this will use live Frankfurter rates " +
+                        "once connected to the currency-calculator API.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = BrandColors.muted,
-                    modifier = Modifier.padding(bottom = 32.dp),
+                    modifier = Modifier.padding(bottom = 20.dp),
                 )
+
+                SignalDivider(modifier = Modifier.padding(bottom = 28.dp))
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -65,10 +79,23 @@ fun App() {
                     border = BorderStroke(1.dp, BrandColors.line),
                 ) {
                     Column(modifier = Modifier.padding(28.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            CurrencyBadge(label = "FROM", currency = fromCurrency, modifier = Modifier.weight(1f))
+
+                            SwapButton(onClick = { direction = direction.swapped() })
+
+                            CurrencyBadge(label = "TO", currency = toCurrency, modifier = Modifier.weight(1f))
+                        }
+
                         Text(
-                            text = "AMOUNT (JPY)",
+                            text = "AMOUNT ($fromCurrency)",
                             style = MaterialTheme.typography.labelMedium,
                             color = BrandColors.muted,
+                            modifier = Modifier.padding(top = 22.dp),
                         )
 
                         OutlinedTextField(
@@ -96,7 +123,7 @@ fun App() {
                             )
                             Text(
                                 text = if (converted != null) {
-                                    "${amountText} JPY = ${formatAmount(converted)} EUR"
+                                    "$amountText $fromCurrency = ${formatAmount(converted)} $toCurrency"
                                 } else {
                                     "Enter a valid amount"
                                 },
@@ -116,7 +143,7 @@ fun App() {
                                 color = BrandColors.muted,
                             )
                             Text(
-                                text = "1 JPY = 0.0062 EUR",
+                                text = "1 $fromCurrency = ${formatRate(rate)} $toCurrency",
                                 fontFamily = ibmPlexMonoFamily(),
                                 fontSize = 14.sp,
                                 color = BrandColors.muted,
@@ -130,7 +157,50 @@ fun App() {
     }
 }
 
+@Composable
+private fun CurrencyBadge(label: String, currency: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = BrandColors.muted,
+        )
+        Text(
+            text = currency,
+            fontFamily = ibmPlexMonoFamily(),
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp,
+            color = BrandColors.ink,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun SwapButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .background(BrandColors.paper, RoundedCornerShape(4.dp))
+            .border(1.dp, BrandColors.line, RoundedCornerShape(4.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "⇄",
+            color = BrandColors.signal,
+            fontSize = 18.sp,
+        )
+    }
+}
+
 private fun formatAmount(value: Double): String {
     val rounded = kotlin.math.round(value * 100) / 100
+    return rounded.toString()
+}
+
+private fun formatRate(value: Double): String {
+    val decimals = if (value >= 1) 100.0 else 1_000_000.0
+    val rounded = kotlin.math.round(value * decimals) / decimals
     return rounded.toString()
 }

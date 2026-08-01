@@ -24,6 +24,8 @@ Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android 
   (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic),
   `db/DatabaseDriverFactory.kt` (`expect` declaration for the platform SQLite driver), and `App.kt`
   (the Compose UI, including the from/to currency pickers).
+- `composeApp/src/commonMain/composeResources` — `font/` (bundled TTFs, see Design below) and
+  `values{,-de,-ja}/strings.xml` (localized UI text, see UI localization below).
 - `composeApp/src/commonMain/sqldelight` — the SQL schema (`Currency.sq`, `Rate.sq`) SQLDelight
   generates the typed `AppDatabase` API from.
 - `composeApp/src/androidMain` — `MainActivity.kt` (constructs the database with
@@ -93,6 +95,30 @@ reads them from `DecimalFormatSymbols.getInstance(Locale.getDefault())`, iOS fro
 `NSLocale.currentLocale`. `AmountFormattingTest` covers the grouping and offset-mapping arithmetic
 directly (including the German-style swapped separators) without depending on either platform
 implementation.
+
+## UI localization
+
+The app's UI text is localized into English (default), German, and Japanese — mirroring
+[bscharbau.com](https://bscharbau.com)'s own `/`, `/de/`, `/ja/` pages — via Compose Multiplatform's
+resource system: `composeApp/src/commonMain/composeResources/values{,-de,-ja}/strings.xml`, read
+with `stringResource(Res.string.xxx)`. This picks the right language automatically from the
+device's locale, the same way Android's own `res/values-xx` resource qualifiers work — no
+in-app language switcher, since the OS is already the source of truth for the user's language
+preference. Currency codes/names (`JPY`, `EUR`, "Japanese Yen", …) come from the API as-is and
+aren't translated; the numeric "1 JPY = 0.01 EUR"-style equations have no words in them either, so
+those stay as plain string templates rather than resource entries.
+
+Error message text is a little more involved: the underlying exception detail (`e.message`, from
+the network/platform layer, e.g. "Unable to resolve host") is itself never translatable, so `App()`
+stores just that raw detail in state and defers building the full "Could not load currency list:
+…"-style message to display time — `stringResource()` is `@Composable` and can't be called from
+inside the `LaunchedEffect` coroutines that catch the exceptions in the first place.
+
+Verified on an API 35 emulator by forcing the system locale to `de-DE` and `ja-JP` in turn (`adb
+shell settings put system system_locales <locale>` + a full `adb reboot` — a live locale change or
+a bare process restart isn't enough to guarantee system_server has actually re-propagated the new
+Configuration to freshly-launched apps; a reboot is the reliable way) and confirming every label,
+the hero text, and the amount/result/rate template all render in the target language.
 
 ## Design
 

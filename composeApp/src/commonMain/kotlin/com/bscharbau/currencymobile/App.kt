@@ -41,6 +41,21 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bscharbau.currencymobile.resources.Res
+import com.bscharbau.currencymobile.resources.amount_label
+import com.bscharbau.currencymobile.resources.currency_list_error
+import com.bscharbau.currencymobile.resources.from_label
+import com.bscharbau.currencymobile.resources.headline
+import com.bscharbau.currencymobile.resources.invalid_amount
+import com.bscharbau.currencymobile.resources.live_rates_label
+import com.bscharbau.currencymobile.resources.rate_label
+import com.bscharbau.currencymobile.resources.rates_error
+import com.bscharbau.currencymobile.resources.rates_fetched_no_date
+import com.bscharbau.currencymobile.resources.rates_fetched_with_date
+import com.bscharbau.currencymobile.resources.result_label
+import com.bscharbau.currencymobile.resources.to_label
+import com.bscharbau.currencymobile.resources.unknown_error
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun App(repository: CurrencyRepository) {
@@ -53,12 +68,18 @@ fun App(repository: CurrencyRepository) {
             val groupingSep = remember { groupingSeparator() }
 
             var currencies by remember { mutableStateOf<List<Currency>>(emptyList()) }
-            var currenciesError by remember { mutableStateOf<String?>(null) }
+            // The raw exception detail (untranslated, from the network/platform layer) is kept
+            // separate from whether the fetch failed at all, so the surrounding "could not load"
+            // message can be localized at display time — stringResource() is @Composable and
+            // can't be called from inside these coroutines.
+            var currenciesFailed by remember { mutableStateOf(false) }
+            var currenciesErrorDetail by remember { mutableStateOf<String?>(null) }
 
             var rateEntry by remember { mutableStateOf<RateEntry?>(null) }
             var rateDate by remember { mutableStateOf<String?>(null) }
             var isLoadingRate by remember { mutableStateOf(true) }
-            var rateError by remember { mutableStateOf<String?>(null) }
+            var rateFailed by remember { mutableStateOf(false) }
+            var rateErrorDetail by remember { mutableStateOf<String?>(null) }
 
             // Uses the cached currency list without touching the network if it's non-empty;
             // otherwise fetches fresh (e.g. on first launch) and caches it.
@@ -66,7 +87,8 @@ fun App(repository: CurrencyRepository) {
                 try {
                     currencies = repository.currencies()
                 } catch (e: Exception) {
-                    currenciesError = "Could not load currency list: ${e.message ?: "unknown error"}"
+                    currenciesFailed = true
+                    currenciesErrorDetail = e.message
                 }
             }
 
@@ -74,7 +96,8 @@ fun App(repository: CurrencyRepository) {
             // fetches fresh (falling back to a stale cached value if that fetch fails).
             LaunchedEffect(fromCode, toCode) {
                 isLoadingRate = true
-                rateError = null
+                rateFailed = false
+                rateErrorDetail = null
                 rateEntry = null
                 rateDate = null
 
@@ -83,7 +106,8 @@ fun App(repository: CurrencyRepository) {
                     rateEntry = RateEntry(toCode, result.rate)
                     rateDate = result.date
                 } catch (e: Exception) {
-                    rateError = "Could not load rates: ${e.message ?: "unknown error"}"
+                    rateFailed = true
+                    rateErrorDetail = e.message
                 } finally {
                     isLoadingRate = false
                 }
@@ -119,7 +143,8 @@ fun App(repository: CurrencyRepository) {
                                 fromCode = fromCode,
                                 toCode = toCode,
                                 currencies = currencies,
-                                currenciesError = currenciesError,
+                                currenciesFailed = currenciesFailed,
+                                currenciesErrorDetail = currenciesErrorDetail,
                                 onFromSelect = { fromCode = it },
                                 onToSelect = { toCode = it },
                                 onSwap = onSwap,
@@ -137,7 +162,8 @@ fun App(repository: CurrencyRepository) {
                             decimalSeparator = decimalSep,
                             groupingSeparator = groupingSep,
                             isLoadingRate = isLoadingRate,
-                            rateError = rateError,
+                            rateFailed = rateFailed,
+                            rateErrorDetail = rateErrorDetail,
                             rateEntry = rateEntry,
                             converted = converted,
                             modifier = Modifier.weight(1f),
@@ -157,7 +183,8 @@ fun App(repository: CurrencyRepository) {
                                     fromCode = fromCode,
                                     toCode = toCode,
                                     currencies = currencies,
-                                    currenciesError = currenciesError,
+                                    currenciesFailed = currenciesFailed,
+                                    currenciesErrorDetail = currenciesErrorDetail,
                                     onFromSelect = { fromCode = it },
                                     onToSelect = { toCode = it },
                                     onSwap = onSwap,
@@ -171,7 +198,8 @@ fun App(repository: CurrencyRepository) {
                                     decimalSeparator = decimalSep,
                                     groupingSeparator = groupingSep,
                                     isLoadingRate = isLoadingRate,
-                                    rateError = rateError,
+                                    rateFailed = rateFailed,
+                                    rateErrorDetail = rateErrorDetail,
                                     rateEntry = rateEntry,
                                     converted = converted,
                                     modifier = Modifier.fillMaxWidth().padding(top = 22.dp),
@@ -189,22 +217,22 @@ fun App(repository: CurrencyRepository) {
 private fun HeroContent(rateDate: String?, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
-            text = "LIVE RATES · FRANKFURTER API",
+            text = stringResource(Res.string.live_rates_label),
             style = MaterialTheme.typography.labelMedium,
             fontFamily = ibmPlexMonoFamily(),
             color = BrandColors.signal,
         )
 
         Text(
-            text = "Convert currencies",
+            text = stringResource(Res.string.headline),
             style = MaterialTheme.typography.headlineSmall,
             color = BrandColors.ink,
             modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
         )
 
         Text(
-            text = "Rates are fetched from the currency-calculator API" +
-                (rateDate?.let { ", as of $it" } ?: "") + ".",
+            text = rateDate?.let { stringResource(Res.string.rates_fetched_with_date, it) }
+                ?: stringResource(Res.string.rates_fetched_no_date),
             style = MaterialTheme.typography.bodyMedium,
             color = BrandColors.muted,
             modifier = Modifier.padding(bottom = 20.dp),
@@ -219,16 +247,20 @@ private fun CurrencySelection(
     fromCode: String,
     toCode: String,
     currencies: List<Currency>,
-    currenciesError: String?,
+    currenciesFailed: Boolean,
+    currenciesErrorDetail: String?,
     onFromSelect: (String) -> Unit,
     onToSelect: (String) -> Unit,
     onSwap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        if (currenciesError != null) {
+        if (currenciesFailed) {
             Text(
-                text = currenciesError,
+                text = stringResource(
+                    Res.string.currency_list_error,
+                    currenciesErrorDetail ?: stringResource(Res.string.unknown_error),
+                ),
                 fontFamily = ibmPlexMonoFamily(),
                 color = BrandColors.error,
                 modifier = Modifier.padding(bottom = 16.dp),
@@ -241,7 +273,7 @@ private fun CurrencySelection(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             CurrencyPicker(
-                label = "FROM",
+                label = stringResource(Res.string.from_label),
                 selected = fromCode,
                 currencies = currencies,
                 onSelect = onFromSelect,
@@ -251,7 +283,7 @@ private fun CurrencySelection(
             SwapButton(onClick = onSwap)
 
             CurrencyPicker(
-                label = "TO",
+                label = stringResource(Res.string.to_label),
                 selected = toCode,
                 currencies = currencies,
                 onSelect = onToSelect,
@@ -270,14 +302,15 @@ private fun ConversionFields(
     decimalSeparator: Char,
     groupingSeparator: Char,
     isLoadingRate: Boolean,
-    rateError: String?,
+    rateFailed: Boolean,
+    rateErrorDetail: String?,
     rateEntry: RateEntry?,
     converted: Double?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         Text(
-            text = "AMOUNT ($fromCode)",
+            text = stringResource(Res.string.amount_label, fromCode),
             style = MaterialTheme.typography.labelMedium,
             color = BrandColors.muted,
         )
@@ -305,7 +338,7 @@ private fun ConversionFields(
 
         Column(modifier = Modifier.padding(top = 22.dp)) {
             Text(
-                text = "RESULT",
+                text = stringResource(Res.string.result_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = BrandColors.muted,
             )
@@ -314,8 +347,11 @@ private fun ConversionFields(
                     color = BrandColors.signal,
                     modifier = Modifier.padding(top = 8.dp).size(20.dp),
                 )
-                rateError != null -> Text(
-                    text = rateError,
+                rateFailed -> Text(
+                    text = stringResource(
+                        Res.string.rates_error,
+                        rateErrorDetail ?: stringResource(Res.string.unknown_error),
+                    ),
                     fontFamily = ibmPlexMonoFamily(),
                     color = BrandColors.error,
                     modifier = Modifier.padding(top = 4.dp),
@@ -324,7 +360,7 @@ private fun ConversionFields(
                     text = if (converted != null) {
                         "$amountText $fromCode = ${formatAmount(converted)} $toCode"
                     } else {
-                        "Enter a valid amount"
+                        stringResource(Res.string.invalid_amount)
                     },
                     fontFamily = ibmPlexMonoFamily(),
                     fontWeight = FontWeight.Medium,
@@ -338,7 +374,7 @@ private fun ConversionFields(
 
         Column(modifier = Modifier.padding(top = 18.dp)) {
             Text(
-                text = "RATE",
+                text = stringResource(Res.string.rate_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = BrandColors.muted,
             )

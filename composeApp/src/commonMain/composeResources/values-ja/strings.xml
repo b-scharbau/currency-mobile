@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_rates_label">リアルタイムレート · FRANKFURTER API</string>
+    <string name="headline">通貨換算</string>
+    <string name="rates_fetched_no_date">レートはcurrency-calculator APIから取得されます。</string>
+    <string name="rates_fetched_with_date">レートはcurrency-calculator APIから取得されます(%1$s時点)。</string>
+    <string name="currency_list_error">通貨リストを読み込めませんでした: %1$s</string>
+    <string name="rates_error">レートを読み込めませんでした: %1$s</string>
+    <string name="unknown_error">不明なエラー</string>
+    <string name="from_label">変換元</string>
+    <string name="to_label">変換先</string>
+    <string name="amount_label">金額 (%1$s)</string>
+    <string name="result_label">結果</string>
+    <string name="invalid_amount">有効な金額を入力してください</string>
+    <string name="rate_label">レート</string>
+</resources>

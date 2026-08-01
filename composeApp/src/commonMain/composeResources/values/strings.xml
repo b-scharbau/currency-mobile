@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_rates_label">LIVE RATES · FRANKFURTER API</string>
+    <string name="headline">Convert currencies</string>
+    <string name="rates_fetched_no_date">Rates are fetched from the currency-calculator API.</string>
+    <string name="rates_fetched_with_date">Rates are fetched from the currency-calculator API, as of %1$s.</string>
+    <string name="currency_list_error">Could not load currency list: %1$s</string>
+    <string name="rates_error">Could not load rates: %1$s</string>
+    <string name="unknown_error">unknown error</string>
+    <string name="from_label">FROM</string>
+    <string name="to_label">TO</string>
+    <string name="amount_label">AMOUNT (%1$s)</string>
+    <string name="result_label">RESULT</string>
+    <string name="invalid_amount">Enter a valid amount</string>
+    <string name="rate_label">RATE</string>
+</resources>

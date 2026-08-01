@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_rates_label">LIVE-KURSE · FRANKFURTER API</string>
+    <string name="headline">Währungen umrechnen</string>
+    <string name="rates_fetched_no_date">Die Kurse werden von der currency-calculator-API abgerufen.</string>
+    <string name="rates_fetched_with_date">Die Kurse werden von der currency-calculator-API abgerufen, Stand %1$s.</string>
+    <string name="currency_list_error">Währungsliste konnte nicht geladen werden: %1$s</string>
+    <string name="rates_error">Kurse konnten nicht geladen werden: %1$s</string>
+    <string name="unknown_error">unbekannter Fehler</string>
+    <string name="from_label">VON</string>
+    <string name="to_label">NACH</string>
+    <string name="amount_label">BETRAG (%1$s)</string>
+    <string name="result_label">ERGEBNIS</string>
+    <string name="invalid_amount">Bitte einen gültigen Betrag eingeben</string>
+    <string name="rate_label">KURS</string>
+</resources>

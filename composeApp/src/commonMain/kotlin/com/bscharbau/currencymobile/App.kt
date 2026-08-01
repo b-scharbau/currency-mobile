@@ -36,11 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun App() {
+fun App(repository: CurrencyRepository) {
     CurrencyMobileTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            val api = remember { CurrencyApi() }
-
             var amountText by remember { mutableStateOf("1") }
             var fromCode by remember { mutableStateOf("JPY") }
             var toCode by remember { mutableStateOf("EUR") }
@@ -53,29 +51,48 @@ fun App() {
             var isLoadingRate by remember { mutableStateOf(true) }
             var rateError by remember { mutableStateOf<String?>(null) }
 
+            // Show the cached currency list immediately (if any from a previous launch), then
+            // refresh from the network — updating the local cache on success.
             LaunchedEffect(Unit) {
+                currencies = repository.loadCachedCurrencies()
                 try {
-                    currencies = api.fetchCurrencies()
+                    currencies = repository.refreshCurrencies()
                 } catch (e: Exception) {
-                    currenciesError = "Could not load currency list: ${e.message ?: "unknown error"}"
+                    if (currencies.isEmpty()) {
+                        currenciesError = "Could not load currency list: ${e.message ?: "unknown error"}"
+                    }
                 }
             }
 
+            // Same pattern for rates: paint the last-known rate for this pair instantly if we
+            // have one cached, then refresh — falling back to the cached value (rather than an
+            // error) if the refresh fails.
             LaunchedEffect(fromCode, toCode) {
                 isLoadingRate = true
                 rateError = null
                 rateEntry = null
+                rateDate = null
+
+                val cached = repository.loadCachedRate(fromCode, toCode)
+                if (cached != null) {
+                    rateEntry = RateEntry(toCode, cached.rate)
+                    rateDate = cached.date
+                    isLoadingRate = false
+                }
+
                 try {
-                    val rates = api.fetchRates(fromCode)
+                    val rates = repository.refreshRate(fromCode, toCode)
                     val entry = rates.rates.firstOrNull { it.to == toCode }
-                    if (entry == null) {
-                        rateError = "No rate found for $fromCode → $toCode"
-                    } else {
+                    if (entry != null) {
                         rateEntry = entry
                         rateDate = rates.date
+                    } else if (cached == null) {
+                        rateError = "No rate found for $fromCode → $toCode"
                     }
                 } catch (e: Exception) {
-                    rateError = "Could not load rates: ${e.message ?: "unknown error"}"
+                    if (cached == null) {
+                        rateError = "Could not load rates: ${e.message ?: "unknown error"}"
+                    }
                 } finally {
                     isLoadingRate = false
                 }

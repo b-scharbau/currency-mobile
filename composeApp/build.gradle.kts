@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -34,9 +35,11 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.sqldelight.android.driver)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation(libs.sqldelight.native.driver)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -50,6 +53,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.sqldelight.runtime)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -57,11 +61,28 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.coroutines.test)
         }
+        // Android's local unit tests run on the plain JVM (no real Android SQLite implementation
+        // available without Robolectric), so CurrencyRepositoryTest uses SQLDelight's JDBC driver
+        // here instead of the real AndroidSqliteDriver — same generated schema/queries, real
+        // SQLite (in-memory), just a different driver than production uses.
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.sqlite.driver)
+            }
+        }
     }
 }
 
 compose.resources {
     packageOfResClass = "com.bscharbau.currencymobile.resources"
+}
+
+sqldelight {
+    databases {
+        create("AppDatabase") {
+            packageName.set("com.bscharbau.currencymobile.db")
+        }
+    }
 }
 
 android {

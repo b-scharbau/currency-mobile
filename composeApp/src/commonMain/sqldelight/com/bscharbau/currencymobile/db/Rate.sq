@@ -1,0 +1,15 @@
+CREATE TABLE lastRateEntity (
+    fromCode TEXT NOT NULL,
+    toCode TEXT NOT NULL,
+    rate REAL NOT NULL,
+    date TEXT NOT NULL,
+    PRIMARY KEY (fromCode, toCode)
+);
+
+-- The most recently fetched rate for a given pair, kept as a local fallback so the app has
+-- something to show immediately (and something to fall back to if a fresh fetch fails).
+selectRate:
+SELECT * FROM lastRateEntity WHERE fromCode = ? AND toCode = ?;
+
+upsert:
+INSERT OR REPLACE INTO lastRateEntity(fromCode, toCode, rate, date) VALUES (?, ?, ?, ?);

@@ -1,0 +1,13 @@
+CREATE TABLE currencyEntity (
+    code TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+selectAll:
+SELECT * FROM currencyEntity ORDER BY code;
+
+deleteAll:
+DELETE FROM currencyEntity;
+
+insert:
+INSERT INTO currencyEntity(code, name) VALUES (?, ?);

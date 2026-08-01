@@ -7,6 +7,11 @@ using live rates and the full currency list fetched from the
 [currency-calculator](https://github.com/b-scharbau/currency-calculator) API
 (`currency.bscharbau.com`).
 
+<p>
+  <img src="screenshots/portrait.png" alt="Portrait layout: hero text and a bordered panel with currency pickers and conversion fields stacked vertically" width="260">
+  <img src="screenshots/landscape.png" alt="Landscape layout: hero text and currency pickers in a left column, conversion fields in a right column, separated by a divider" width="500">
+</p>
+
 ## Structure
 
 Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android and iOS:

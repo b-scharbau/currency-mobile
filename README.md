@@ -1,21 +1,23 @@
 # Currency Mobile
 
-A Kotlin Multiplatform + Compose Multiplatform mobile app for converting currencies. First
-version: a single hardcoded JPY → EUR conversion, standing in until it's wired up to the
-[currency-calculator](https://github.com/b-scharbau/currency-calculator) API's `/convert`
-endpoint.
+A Kotlin Multiplatform + Compose Multiplatform mobile app for converting between JPY and EUR,
+bidirectionally, using live rates fetched from the
+[currency-calculator](https://github.com/b-scharbau/currency-calculator) API
+(`currency.bscharbau.com`).
 
 ## Structure
 
 Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android and iOS:
 
-- `composeApp/src/commonMain` — shared code: `CurrencyConverter.kt` (the hardcoded conversion
-  logic), `Theme.kt` (brand colors/typography), and `App.kt` (the Compose UI — a single screen
-  with an amount field and the converted result).
+- `composeApp/src/commonMain` — shared code: `CurrencyApi.kt` (fetches rates from
+  `currency.bscharbau.com/currency?code=` via Ktor), `CurrencyConverter.kt` (the pure conversion
+  math and direction handling), `Theme.kt` (brand colors/typography), `SignalDivider.kt` (the
+  zigzag divider graphic), and `App.kt` (the Compose UI).
 - `composeApp/src/androidMain` — `MainActivity.kt`, the Android entry point.
 - `composeApp/src/iosMain` — `MainViewController.kt`, exposing the shared Compose UI as a
   `UIViewController` for iOS.
-- `composeApp/src/commonTest` — unit tests for the conversion logic.
+- `composeApp/src/commonTest` — unit tests for the conversion logic and API response parsing
+  (via Ktor's `MockEngine` — no live network calls in the test suite).
 
 ## Design
 
@@ -50,8 +52,7 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
 
 ## Known limitations (first version)
 
-- The JPY/EUR rate is hardcoded (`CurrencyConverter.kt`), not fetched live — the reverse direction
-  is derived from it (`1 / rate`), not a second hardcoded value.
-- Conversion works in both directions (JPY→EUR and EUR→JPY, swappable), but only this one
-  currency pair; no arbitrary currency selection UI yet.
-- Not yet wired up to the currency-calculator backend API.
+- Only the JPY/EUR pair (swappable in either direction); no arbitrary currency selection UI yet.
+- No caching — a fresh `/currency?code=` request is made every time the direction changes (the
+  web frontend's approach), rather than persisting rates across app launches.
+- No retry logic on network failure — a failed request just shows an error message.

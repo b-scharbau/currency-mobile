@@ -183,3 +183,7 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
   aggressively" (a timeout) and "probably won't help" (e.g. a malformed response body).
 - Amount input has no client-side validation beyond `toDoubleOrNull()`; invalid text just shows
   "Enter a valid amount" rather than proper input filtering.
+
+## Author
+
+Built by [Benjamin Scharbau](https://bscharbau.com), a freelance full-stack engineer in Fukuoka, Japan.

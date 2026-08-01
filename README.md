@@ -21,9 +21,11 @@ Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android 
   retries below), `CurrencyRepository.kt` (combines the API with the local SQLDelight cache — see
   Persistence below), `CurrencyConverter.kt` (the pure conversion math), `AmountFormatting.kt`
   (locale-aware parsing/display for the amount field — see Amount formatting below), `Theme.kt`
-  (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic),
-  `db/DatabaseDriverFactory.kt` (`expect` declaration for the platform SQLite driver), and `App.kt`
-  (the Compose UI, including the from/to currency pickers).
+  (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic), and
+  `db/DatabaseDriverFactory.kt` (`expect` declaration for the platform SQLite driver).
+- `composeApp/src/commonMain/.../ui` — the Compose UI, one composable per file: `App.kt` (state,
+  effects, and the portrait/landscape layout switch — see Layout below), `HeroContent.kt`,
+  `CurrencySelection.kt`, `ConversionFields.kt`, `CurrencyPicker.kt`, `SwapButton.kt`.
 - `composeApp/src/commonMain/composeResources` — `font/` (bundled TTFs, see Design below) and
   `values{,-de,-ja}/strings.xml` (localized UI text, see UI localization below).
 - `composeApp/src/commonMain/sqldelight` — the SQL schema (`Currency.sq`, `Rate.sq`) SQLDelight
@@ -149,7 +151,7 @@ own `DarkBrandPalette` alongside `LightBrandPalette`, keeping the same hues (pap
 `signal`/`error` brightened so they still meet contrast against the dark background). Both are
 plain `BrandPalette` data classes; `CurrencyMobileTheme` picks one via `isSystemInDarkTheme()` and
 provides it through a `CompositionLocal`, with `BrandColors.paper`/`.ink`/etc. as thin `@Composable`
-getters over it — so the ~30 existing `BrandColors.xxx` call sites throughout `App.kt` needed no
+getters over it — so the ~30 existing `BrandColors.xxx` call sites throughout the UI needed no
 changes to become theme-aware. (The one exception: `SignalDivider`'s `Canvas` draw lambda isn't a
 composable context, so it resolves `BrandColors.signal` to a local `val` just before entering
 `Canvas` rather than reading it inside the draw block.)

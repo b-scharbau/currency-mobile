@@ -1,5 +1,7 @@
 # Currency Mobile
 
+[![CI](https://github.com/b-scharbau/currency-mobile/actions/workflows/ci.yml/badge.svg)](https://github.com/b-scharbau/currency-mobile/actions/workflows/ci.yml)
+
 A Kotlin Multiplatform + Compose Multiplatform mobile app for converting between currencies,
 using live rates and the full currency list fetched from the
 [currency-calculator](https://github.com/b-scharbau/currency-calculator) API

@@ -10,11 +10,12 @@ using live rates and the full currency list fetched from the
 Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android and iOS:
 
 - `composeApp/src/commonMain` — shared code: `CurrencyApi.kt` (fetches the currency list and
-  rates from `currency.bscharbau.com` via Ktor), `CurrencyRepository.kt` (combines the API with
-  the local SQLDelight cache — see Persistence below), `CurrencyConverter.kt` (the pure conversion
-  math), `Theme.kt` (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic),
-  `db/DatabaseDriverFactory.kt` (`expect` declaration for the platform SQLite driver), and
-  `App.kt` (the Compose UI, including the from/to currency pickers).
+  rates from `currency.bscharbau.com` via Ktor), `NetworkRetry.kt` (the retry policy — see Network
+  retries below), `CurrencyRepository.kt` (combines the API with the local SQLDelight cache — see
+  Persistence below), `CurrencyConverter.kt` (the pure conversion math), `Theme.kt` (brand
+  colors/typography), `SignalDivider.kt` (the zigzag divider graphic), `db/DatabaseDriverFactory.kt`
+  (`expect` declaration for the platform SQLite driver), and `App.kt` (the Compose UI, including
+  the from/to currency pickers).
 - `composeApp/src/commonMain/sqldelight` — the SQL schema (`Currency.sq`, `Rate.sq`) SQLDelight
   generates the typed `AppDatabase` API from.
 - `composeApp/src/androidMain` — `MainActivity.kt` (constructs the database with
@@ -26,6 +27,19 @@ Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android 
   (via Ktor's `MockEngine` — no live network calls in the test suite).
 - `composeApp/src/androidUnitTest` — `CurrencyRepositoryTest.kt`, exercising the repository
   against a real in-memory SQLite database (see Persistence below).
+
+## Network retries
+
+`NetworkRetry.execute()` mirrors the backend's own `FrankfurterRetry`: up to 3 attempts with
+increasing backoff (300ms, 600ms, ...) for transient failures — timeouts, connection errors, 5xx
+server errors, anything that isn't a definite client error. A 4xx (`ClientRequestException`, e.g.
+an unknown currency code) is never retried, since retrying it would just fail the same way again.
+Both `CurrencyApi.fetchCurrencies()` and `fetchRates()` go through it; `expectSuccess = true` on the
+Ktor client is what makes non-2xx responses throw typed exceptions in the first place, so the retry
+logic can tell a 4xx from a 5xx from a network-level failure. `NetworkRetryTest` verifies the policy
+directly (retries and eventually succeeds, gives up after exhausting attempts, never retries a
+real `ClientRequestException` produced by a mocked 400 response) — all using 1ms delays and
+`runTest`'s virtual time, so the suite doesn't actually wait around for backoff.
 
 ## Persistence
 
@@ -93,7 +107,8 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
   accumulates one row per (from, to) pair ever viewed.
 - The currency list, once cached, is never refreshed again on its own — if the backend adds or
   removes a supported currency, the app won't see it until its local storage is cleared.
-- No retry logic on network failure — a failed request falls back to the cache if there's a hit,
-  or shows an error message if there isn't; either way, there's no automatic retry.
+- Retries are fixed at 3 attempts / 300ms initial backoff, not configurable, and every failure mode
+  short of a 4xx gets the same treatment — there's no differentiation between "worth retrying
+  aggressively" (a timeout) and "probably won't help" (e.g. a malformed response body).
 - Amount input has no client-side validation beyond `toDoubleOrNull()`; invalid text just shows
   "Enter a valid amount" rather than proper input filtering.

@@ -29,11 +29,12 @@ class CurrencyApi(
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
+        expectSuccess = true
     },
 ) {
     suspend fun fetchCurrencies(): List<Currency> =
-        httpClient.get("$baseUrl/currencies").body()
+        NetworkRetry.execute { httpClient.get("$baseUrl/currencies").body() }
 
     suspend fun fetchRates(code: String): CurrencyRates =
-        httpClient.get("$baseUrl/currency") { parameter("code", code) }.body()
+        NetworkRetry.execute { httpClient.get("$baseUrl/currency") { parameter("code", code) }.body() }
 }

@@ -94,6 +94,35 @@ class CurrencyRepositoryTest {
     }
 
     @Test
+    fun currenciesFetchesAndCachesWhenNothingIsCachedYet() = runTest {
+        val repository = CurrencyRepository(
+            database = newInMemoryDatabase(),
+            api = apiRespondingWith(
+                """[{"code":"AUD","name":"Australian Dollar"},{"code":"EUR","name":"Euro"}]""",
+            ),
+        )
+
+        val result = repository.currencies()
+
+        assertEquals(2, result.size)
+        assertEquals(result.sortedBy { it.code }, repository.loadCachedCurrencies())
+    }
+
+    @Test
+    fun currenciesUsesTheCacheWithoutTouchingTheNetworkWhenNonEmpty() = runTest {
+        val database = newInMemoryDatabase()
+        database.currencyQueries.insert("JPY", "Japanese Yen")
+
+        var networkCalled = false
+        val repository = CurrencyRepository(database = database, api = apiThatTracksCalls { networkCalled = true })
+
+        val result = repository.currencies()
+
+        assertEquals(listOf(Currency("JPY", "Japanese Yen")), result)
+        assertFalse(networkCalled, "should not have called the API when the currency cache is non-empty")
+    }
+
+    @Test
     fun fetchesAndCachesWhenNothingIsCachedYet() = runTest {
         val repository = CurrencyRepository(
             database = newInMemoryDatabase(),

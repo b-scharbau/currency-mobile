@@ -51,16 +51,13 @@ fun App(repository: CurrencyRepository) {
             var isLoadingRate by remember { mutableStateOf(true) }
             var rateError by remember { mutableStateOf<String?>(null) }
 
-            // Show the cached currency list immediately (if any from a previous launch), then
-            // refresh from the network — updating the local cache on success.
+            // Uses the cached currency list without touching the network if it's non-empty;
+            // otherwise fetches fresh (e.g. on first launch) and caches it.
             LaunchedEffect(Unit) {
-                currencies = repository.loadCachedCurrencies()
                 try {
-                    currencies = repository.refreshCurrencies()
+                    currencies = repository.currencies()
                 } catch (e: Exception) {
-                    if (currencies.isEmpty()) {
-                        currenciesError = "Could not load currency list: ${e.message ?: "unknown error"}"
-                    }
+                    currenciesError = "Could not load currency list: ${e.message ?: "unknown error"}"
                 }
             }
 

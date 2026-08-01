@@ -48,8 +48,10 @@ generated schema and queries either way. Two tests in particular prove the point
 `usesTodaysCachedRateWithoutTouchingTheNetwork` (a mocked API that would fail the test if called at
 all) and `fallsBackToAStaleCachedRateWhenAFreshFetchFails`.
 
-The currency list doesn't have this same freshness gate — it's always refreshed in the background
-on launch, with the cached list only used to paint something immediately while that happens.
+The currency list follows a simpler rule via `CurrencyRepository.currencies()`: if anything is
+cached at all, it's used with no network call; the API is only hit when the local cache is
+completely empty (effectively: first launch, or after clearing the app's storage). Unlike rates,
+there's no day-based staleness check — once cached, the list is never refreshed again on its own.
 
 ## Design
 
@@ -89,6 +91,8 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
   timezone far from the backend's, these could disagree.
 - The rate cache never expires beyond that daily check, and never gets cleaned up — it just
   accumulates one row per (from, to) pair ever viewed.
+- The currency list, once cached, is never refreshed again on its own — if the backend adds or
+  removes a supported currency, the app won't see it until its local storage is cleared.
 - No retry logic on network failure — a failed request falls back to the cache if there's a hit,
   or shows an error message if there isn't; either way, there's no automatic retry.
 - Amount input has no client-side validation beyond `toDoubleOrNull()`; invalid text just shows

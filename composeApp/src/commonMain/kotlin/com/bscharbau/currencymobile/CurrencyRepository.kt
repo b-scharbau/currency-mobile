@@ -27,6 +27,20 @@ class CurrencyRepository(
         return fetched
     }
 
+    /**
+     * The full currency list — from the local cache without touching the network if it's
+     * non-empty, otherwise fetched fresh and cached. Note this means the list is never refreshed
+     * again once anything is cached; if the backend's supported currencies change, that's only
+     * picked up by a fresh install (or otherwise clearing the app's local storage).
+     */
+    suspend fun currencies(): List<Currency> {
+        val cached = loadCachedCurrencies()
+        if (cached.isNotEmpty()) {
+            return cached
+        }
+        return refreshCurrencies()
+    }
+
     fun loadCachedRate(from: String, to: String): CachedRate? =
         database.rateQueries.selectRate(from, to).executeAsOneOrNull()
             ?.let { CachedRate(rate = it.rate, date = it.date) }

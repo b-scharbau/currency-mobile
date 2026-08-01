@@ -31,19 +31,25 @@ Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android 
 
 The full currency list and the most recently fetched rate per (from, to) pair are cached locally
 via [SQLDelight](https://sqldelight.github.io/sqldelight/) (`AndroidSqliteDriver` on Android,
-`NativeSqliteDriver` on iOS — same generated schema/queries either way). `CurrencyRepository`
-wraps this with a "show cached, then refresh" pattern: on launch and on every from/to change, the
-cached value (if any) is shown immediately, then a fresh fetch runs in the background and updates
-both the UI and the cache on success — but silently keeps showing the cached value if the refresh
-fails, rather than replacing a working display with an error.
+`NativeSqliteDriver` on iOS — same generated schema/queries either way).
+
+For rates specifically, `CurrencyRepository.rateFor()` matches the backend's own caching
+philosophy (`CachedExchangeRate` / `CachedCurrencyRates`, keyed by fetch day): if the cached rate
+for a pair is already from today, it's returned straight from the local database with no network
+call at all; otherwise a fresh fetch runs and updates the cache. If that fetch fails, it falls back
+to whatever's cached — even if stale — rather than showing an error when there's a perfectly usable
+(if outdated) number already on hand.
 
 `CurrencyRepositoryTest` (in `androidUnitTest`, not `commonTest`) verifies this against a real
 in-memory SQLite database via SQLDelight's JDBC driver — Android's local unit tests run on a plain
 JVM with no real Android SQLite implementation available (that needs Robolectric or an actual
 device/emulator), so the JDBC driver stands in for `AndroidSqliteDriver` in tests; it's the same
-generated schema and queries either way. One test in particular
-(`cachedRateSurvivesAFailedRefresh`) directly proves the point of this feature: a rate fetched
-successfully is still readable from the cache after a subsequent refresh attempt fails.
+generated schema and queries either way. Two tests in particular prove the point of this feature:
+`usesTodaysCachedRateWithoutTouchingTheNetwork` (a mocked API that would fail the test if called at
+all) and `fallsBackToAStaleCachedRateWhenAFreshFetchFails`.
+
+The currency list doesn't have this same freshness gate — it's always refreshed in the background
+on launch, with the cached list only used to paint something immediately while that happens.
 
 ## Design
 
@@ -78,8 +84,11 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
 
 ## Known limitations (first version)
 
-- The cache never expires or gets cleaned up — it just accumulates one row per (from, to) pair
-  ever viewed, with no TTL or "last updated" staleness indicator shown in the UI.
+- "Today" is the device's local date (`kotlinx-datetime`, `TimeZone.currentSystemDefault()`), not
+  necessarily the reference date the rate itself is quoted as of — near a day boundary in a
+  timezone far from the backend's, these could disagree.
+- The rate cache never expires beyond that daily check, and never gets cleaned up — it just
+  accumulates one row per (from, to) pair ever viewed.
 - No retry logic on network failure — a failed request falls back to the cache if there's a hit,
   or shows an error message if there isn't; either way, there's no automatic retry.
 - Amount input has no client-side validation beyond `toDoubleOrNull()`; invalid text just shows

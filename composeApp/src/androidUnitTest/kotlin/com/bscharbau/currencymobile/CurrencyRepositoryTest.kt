@@ -11,12 +11,16 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Exercises CurrencyRepository against a real (in-memory) SQLite database via SQLDelight's JDBC
@@ -55,6 +59,23 @@ class CurrencyRepositoryTest {
         return CurrencyApi(httpClient = client)
     }
 
+    private fun apiThatTracksCalls(onCalled: () -> Unit): CurrencyApi {
+        val mockEngine = MockEngine {
+            onCalled()
+            respond(
+                content = """{"code":"JPY","name":"Japanese Yen","date":"irrelevant","rates":[]}""",
+                status = HttpStatusCode.OK,
+                headers = Headers.build { append(HttpHeaders.ContentType, "application/json") },
+            )
+        }
+        val client = HttpClient(mockEngine) {
+            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        }
+        return CurrencyApi(httpClient = client)
+    }
+
+    private fun today(): String = Clock.System.todayIn(TimeZone.currentSystemDefault()).toString()
+
     @Test
     fun cachesFetchedCurrenciesAndReadsThemBack() = runTest {
         val repository = CurrencyRepository(
@@ -73,42 +94,80 @@ class CurrencyRepositoryTest {
     }
 
     @Test
-    fun cachesTheMostRecentRateAndReadsItBack() = runTest {
+    fun fetchesAndCachesWhenNothingIsCachedYet() = runTest {
         val repository = CurrencyRepository(
             database = newInMemoryDatabase(),
             api = apiRespondingWith(
-                """{"code":"JPY","name":"Japanese Yen","date":"2026-07-31","rates":[{"to":"EUR","rate":0.00543}]}""",
+                """{"code":"JPY","name":"Japanese Yen","date":"2020-01-01","rates":[{"to":"EUR","rate":0.00543}]}""",
             ),
         )
 
         assertNull(repository.loadCachedRate("JPY", "EUR"))
 
-        repository.refreshRate("JPY", "EUR")
+        val result = repository.rateFor("JPY", "EUR")
 
-        val cached = repository.loadCachedRate("JPY", "EUR")
-        assertNotNull(cached)
-        assertEquals(0.00543, cached.rate)
-        assertEquals("2026-07-31", cached.date)
+        assertEquals(0.00543, result.rate)
+        assertEquals("2020-01-01", result.date)
+        assertEquals(result, repository.loadCachedRate("JPY", "EUR"))
     }
 
     @Test
-    fun cachedRateSurvivesAFailedRefresh() = runTest {
+    fun usesTodaysCachedRateWithoutTouchingTheNetwork() = runTest {
         val database = newInMemoryDatabase()
-        val goodRepository = CurrencyRepository(
+        database.rateQueries.upsert("JPY", "EUR", 0.0062, today())
+
+        var networkCalled = false
+        val repository = CurrencyRepository(database = database, api = apiThatTracksCalls { networkCalled = true })
+
+        val result = repository.rateFor("JPY", "EUR")
+
+        assertEquals(0.0062, result.rate)
+        assertEquals(today(), result.date)
+        assertFalse(networkCalled, "should not have called the API when the cached rate is from today")
+    }
+
+    @Test
+    fun refetchesWhenTheCachedRateIsFromAnEarlierDay() = runTest {
+        val database = newInMemoryDatabase()
+        database.rateQueries.upsert("JPY", "EUR", 0.0062, "2020-01-01")
+
+        var networkCalled = false
+        val repository = CurrencyRepository(
             database = database,
             api = apiRespondingWith(
-                """{"code":"JPY","name":"Japanese Yen","date":"2026-07-31","rates":[{"to":"EUR","rate":0.00543}]}""",
+                """{"code":"JPY","name":"Japanese Yen","date":"${today()}","rates":[{"to":"EUR","rate":0.00543}]}""",
             ),
         )
-        goodRepository.refreshRate("JPY", "EUR")
 
-        val failingRepository = CurrencyRepository(database = database, api = apiThatFails())
+        val result = repository.rateFor("JPY", "EUR")
 
-        assertFailsWith<Exception> { failingRepository.refreshRate("JPY", "EUR") }
+        assertEquals(0.00543, result.rate)
+        assertEquals(today(), result.date)
+        assertEquals(result, repository.loadCachedRate("JPY", "EUR"))
+    }
 
-        // The earlier successful fetch is still there, even though the last refresh failed.
-        val cached = failingRepository.loadCachedRate("JPY", "EUR")
-        assertNotNull(cached)
-        assertEquals(0.00543, cached.rate)
+    @Test
+    fun fallsBackToAStaleCachedRateWhenAFreshFetchFails() = runTest {
+        val database = newInMemoryDatabase()
+        database.rateQueries.upsert("JPY", "EUR", 0.0062, "2020-01-01")
+
+        val repository = CurrencyRepository(database = database, api = apiThatFails())
+
+        val result = repository.rateFor("JPY", "EUR")
+
+        assertEquals(0.0062, result.rate)
+        assertEquals("2020-01-01", result.date)
+    }
+
+    @Test
+    fun throwsWhenThereIsNoCacheAndTheFetchFails() = runTest {
+        val repository = CurrencyRepository(database = newInMemoryDatabase(), api = apiThatFails())
+
+        assertFailsWith<Exception> { repository.rateFor("JPY", "EUR") }
+    }
+
+    @Test
+    fun sanityCheckTodayHelperProducesAPlausibleIsoDate() {
+        assertTrue(today().matches(Regex("""\d{4}-\d{2}-\d{2}""")))
     }
 }

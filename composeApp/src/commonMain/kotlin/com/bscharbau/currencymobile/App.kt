@@ -64,35 +64,20 @@ fun App(repository: CurrencyRepository) {
                 }
             }
 
-            // Same pattern for rates: paint the last-known rate for this pair instantly if we
-            // have one cached, then refresh — falling back to the cached value (rather than an
-            // error) if the refresh fails.
+            // Uses today's cached rate without touching the network if there is one; otherwise
+            // fetches fresh (falling back to a stale cached value if that fetch fails).
             LaunchedEffect(fromCode, toCode) {
                 isLoadingRate = true
                 rateError = null
                 rateEntry = null
                 rateDate = null
 
-                val cached = repository.loadCachedRate(fromCode, toCode)
-                if (cached != null) {
-                    rateEntry = RateEntry(toCode, cached.rate)
-                    rateDate = cached.date
-                    isLoadingRate = false
-                }
-
                 try {
-                    val rates = repository.refreshRate(fromCode, toCode)
-                    val entry = rates.rates.firstOrNull { it.to == toCode }
-                    if (entry != null) {
-                        rateEntry = entry
-                        rateDate = rates.date
-                    } else if (cached == null) {
-                        rateError = "No rate found for $fromCode → $toCode"
-                    }
+                    val result = repository.rateFor(fromCode, toCode)
+                    rateEntry = RateEntry(toCode, result.rate)
+                    rateDate = result.date
                 } catch (e: Exception) {
-                    if (cached == null) {
-                        rateError = "Could not load rates: ${e.message ?: "unknown error"}"
-                    }
+                    rateError = "Could not load rates: ${e.message ?: "unknown error"}"
                 } finally {
                     isLoadingRate = false
                 }

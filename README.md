@@ -98,10 +98,12 @@ arrangements based on whether the window is wider than it is tall — landscape 
 practically (a plain width-vs-height comparison, not an Android-specific orientation check, so it
 works the same way on iOS):
 
-- **Portrait**: hero text, then the panel with `CurrencySelection` (FROM/TO/swap) stacked above
-  `ConversionFields` (amount/result/rate) — one column, top to bottom.
-- **Landscape**: one row, two columns — hero text and `CurrencySelection` together on the left,
-  `ConversionFields` alone on the right.
+- **Portrait**: hero text, then a bordered panel with `CurrencySelection` (FROM/TO/swap) stacked
+  above `ConversionFields` (amount/result/rate) — one column, top to bottom.
+- **Landscape**: no panel border — just a `VerticalDivider` between hero text +
+  `CurrencySelection` on the left and `ConversionFields` alone on the right. `Row(Modifier.
+  height(IntrinsicSize.Min))` is what makes the divider stretch to match the taller column's
+  actual content height rather than the full screen height.
 
 The switch exists because the portrait arrangement's content (especially the RATE row at the
 bottom) doesn't fit within a phone's much shorter landscape height with everything stacked in one

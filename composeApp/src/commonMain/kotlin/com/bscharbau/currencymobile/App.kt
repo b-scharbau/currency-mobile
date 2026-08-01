@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -24,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -102,41 +105,37 @@ fun App(repository: CurrencyRepository) {
                 }
 
                 if (isWide) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = BrandColors.paper,
-                        shape = RoundedCornerShape(4.dp),
-                        border = BorderStroke(1.dp, BrandColors.line),
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
-                        Row(
-                            modifier = Modifier.padding(28.dp),
-                            horizontalArrangement = Arrangement.spacedBy(32.dp),
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                HeroContent(rateDate = rateDate, modifier = Modifier.padding(bottom = 28.dp))
-                                CurrencySelection(
-                                    fromCode = fromCode,
-                                    toCode = toCode,
-                                    currencies = currencies,
-                                    currenciesError = currenciesError,
-                                    onFromSelect = { fromCode = it },
-                                    onToSelect = { toCode = it },
-                                    onSwap = onSwap,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                            }
-                            ConversionFields(
+                        Column(modifier = Modifier.weight(1f)) {
+                            HeroContent(rateDate = rateDate, modifier = Modifier.padding(bottom = 28.dp))
+                            CurrencySelection(
                                 fromCode = fromCode,
                                 toCode = toCode,
-                                amountText = amountText,
-                                onAmountChange = { amountText = it },
-                                isLoadingRate = isLoadingRate,
-                                rateError = rateError,
-                                rateEntry = rateEntry,
-                                converted = converted,
-                                modifier = Modifier.weight(1f),
+                                currencies = currencies,
+                                currenciesError = currenciesError,
+                                onFromSelect = { fromCode = it },
+                                onToSelect = { toCode = it },
+                                onSwap = onSwap,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
+
+                        VerticalDivider(color = BrandColors.line)
+
+                        ConversionFields(
+                            fromCode = fromCode,
+                            toCode = toCode,
+                            amountText = amountText,
+                            onAmountChange = { amountText = it },
+                            isLoadingRate = isLoadingRate,
+                            rateError = rateError,
+                            rateEntry = rateEntry,
+                            converted = converted,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 } else {
                     Column {

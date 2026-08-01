@@ -61,4 +61,17 @@ class CurrencyApiTest {
 
         assertEquals("JPY", result.code)
     }
+
+    @Test
+    fun parsesCurrenciesFromTheRealResponseShape() = runTest {
+        // A trimmed real response from GET /currencies (currency.bscharbau.com).
+        val api = apiWithMockResponse(
+            """[{"code":"AUD","name":"Australian Dollar"},{"code":"EUR","name":"Euro"},{"code":"JPY","name":"Japanese Yen"}]""",
+        )
+
+        val result = api.fetchCurrencies()
+
+        assertEquals(3, result.size)
+        assertEquals(Currency("EUR", "Euro"), result[1])
+    }
 }

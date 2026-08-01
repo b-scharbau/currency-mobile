@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,35 +39,45 @@ import androidx.compose.ui.unit.sp
 fun App() {
     CurrencyMobileTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            var amountText by remember { mutableStateOf("1") }
-            var direction by remember { mutableStateOf(CurrencyConverter.Direction.JpyToEur) }
             val api = remember { CurrencyApi() }
+
+            var amountText by remember { mutableStateOf("1") }
+            var fromCode by remember { mutableStateOf("JPY") }
+            var toCode by remember { mutableStateOf("EUR") }
+
+            var currencies by remember { mutableStateOf<List<Currency>>(emptyList()) }
+            var currenciesError by remember { mutableStateOf<String?>(null) }
 
             var rateEntry by remember { mutableStateOf<RateEntry?>(null) }
             var rateDate by remember { mutableStateOf<String?>(null) }
-            var isLoading by remember { mutableStateOf(true) }
-            var errorMessage by remember { mutableStateOf<String?>(null) }
+            var isLoadingRate by remember { mutableStateOf(true) }
+            var rateError by remember { mutableStateOf<String?>(null) }
 
-            val fromCurrency = CurrencyConverter.fromCurrency(direction)
-            val toCurrency = CurrencyConverter.toCurrency(direction)
+            LaunchedEffect(Unit) {
+                try {
+                    currencies = api.fetchCurrencies()
+                } catch (e: Exception) {
+                    currenciesError = "Could not load currency list: ${e.message ?: "unknown error"}"
+                }
+            }
 
-            LaunchedEffect(direction) {
-                isLoading = true
-                errorMessage = null
+            LaunchedEffect(fromCode, toCode) {
+                isLoadingRate = true
+                rateError = null
                 rateEntry = null
                 try {
-                    val rates = api.fetchRates(fromCurrency)
-                    val entry = rates.rates.firstOrNull { it.to == toCurrency }
+                    val rates = api.fetchRates(fromCode)
+                    val entry = rates.rates.firstOrNull { it.to == toCode }
                     if (entry == null) {
-                        errorMessage = "No rate found for $fromCurrency → $toCurrency"
+                        rateError = "No rate found for $fromCode → $toCode"
                     } else {
                         rateEntry = entry
                         rateDate = rates.date
                     }
                 } catch (e: Exception) {
-                    errorMessage = "Could not load rates: ${e.message ?: "unknown error"}"
+                    rateError = "Could not load rates: ${e.message ?: "unknown error"}"
                 } finally {
-                    isLoading = false
+                    isLoadingRate = false
                 }
             }
 
@@ -111,20 +123,45 @@ fun App() {
                     border = BorderStroke(1.dp, BrandColors.line),
                 ) {
                     Column(modifier = Modifier.padding(28.dp)) {
+                        if (currenciesError != null) {
+                            Text(
+                                text = currenciesError!!,
+                                fontFamily = ibmPlexMonoFamily(),
+                                color = BrandColors.error,
+                                modifier = Modifier.padding(bottom = 16.dp),
+                            )
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            CurrencyBadge(label = "FROM", currency = fromCurrency, modifier = Modifier.weight(1f))
+                            CurrencyPicker(
+                                label = "FROM",
+                                selected = fromCode,
+                                currencies = currencies,
+                                onSelect = { fromCode = it },
+                                modifier = Modifier.weight(1f),
+                            )
 
-                            SwapButton(onClick = { direction = direction.swapped() })
+                            SwapButton(onClick = {
+                                val previousFrom = fromCode
+                                fromCode = toCode
+                                toCode = previousFrom
+                            })
 
-                            CurrencyBadge(label = "TO", currency = toCurrency, modifier = Modifier.weight(1f))
+                            CurrencyPicker(
+                                label = "TO",
+                                selected = toCode,
+                                currencies = currencies,
+                                onSelect = { toCode = it },
+                                modifier = Modifier.weight(1f),
+                            )
                         }
 
                         Text(
-                            text = "AMOUNT ($fromCurrency)",
+                            text = "AMOUNT ($fromCode)",
                             style = MaterialTheme.typography.labelMedium,
                             color = BrandColors.muted,
                             modifier = Modifier.padding(top = 22.dp),
@@ -154,19 +191,19 @@ fun App() {
                                 color = BrandColors.muted,
                             )
                             when {
-                                isLoading -> CircularProgressIndicator(
+                                isLoadingRate -> CircularProgressIndicator(
                                     color = BrandColors.signal,
                                     modifier = Modifier.padding(top = 8.dp).size(20.dp),
                                 )
-                                errorMessage != null -> Text(
-                                    text = errorMessage!!,
+                                rateError != null -> Text(
+                                    text = rateError!!,
                                     fontFamily = ibmPlexMonoFamily(),
                                     color = BrandColors.error,
                                     modifier = Modifier.padding(top = 4.dp),
                                 )
                                 else -> Text(
                                     text = if (converted != null) {
-                                        "$amountText $fromCurrency = ${formatAmount(converted)} $toCurrency"
+                                        "$amountText $fromCode = ${formatAmount(converted)} $toCode"
                                     } else {
                                         "Enter a valid amount"
                                     },
@@ -187,8 +224,7 @@ fun App() {
                                 color = BrandColors.muted,
                             )
                             Text(
-                                text = rateEntry?.let { "1 $fromCurrency = ${formatRate(it.rate)} $toCurrency" }
-                                    ?: "—",
+                                text = rateEntry?.let { "1 $fromCode = ${formatRate(it.rate)} $toCode" } ?: "—",
                                 fontFamily = ibmPlexMonoFamily(),
                                 fontSize = 14.sp,
                                 color = BrandColors.muted,
@@ -203,21 +239,58 @@ fun App() {
 }
 
 @Composable
-private fun CurrencyBadge(label: String, currency: String, modifier: Modifier = Modifier) {
+private fun CurrencyPicker(
+    label: String,
+    selected: String,
+    currencies: List<Currency>,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
     Column(modifier = modifier) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             color = BrandColors.muted,
         )
-        Text(
-            text = currency,
-            fontFamily = ibmPlexMonoFamily(),
-            fontWeight = FontWeight.Medium,
-            fontSize = 16.sp,
-            color = BrandColors.ink,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        Box(modifier = Modifier.padding(top = 4.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, BrandColors.line, RoundedCornerShape(4.dp))
+                    .clickable(enabled = currencies.isNotEmpty()) { expanded = true }
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = selected,
+                    fontFamily = ibmPlexMonoFamily(),
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                    color = BrandColors.ink,
+                )
+                Text(text = "▾", color = BrandColors.muted, fontSize = 14.sp)
+            }
+
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                currencies.forEach { currency ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "${currency.code} — ${currency.name}",
+                                fontFamily = ibmPlexSansFamily(),
+                            )
+                        },
+                        onClick = {
+                            onSelect(currency.code)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -225,6 +298,7 @@ private fun CurrencyBadge(label: String, currency: String, modifier: Modifier = 
 private fun SwapButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .padding(top = 20.dp)
             .size(40.dp)
             .background(BrandColors.paper, RoundedCornerShape(4.dp))
             .border(1.dp, BrandColors.line, RoundedCornerShape(4.dp))

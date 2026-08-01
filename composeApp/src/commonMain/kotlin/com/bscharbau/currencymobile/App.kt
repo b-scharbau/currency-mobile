@@ -49,6 +49,8 @@ fun App(repository: CurrencyRepository) {
             var amountText by remember { mutableStateOf("1") }
             var fromCode by remember { mutableStateOf("JPY") }
             var toCode by remember { mutableStateOf("EUR") }
+            val decimalSep = remember { decimalSeparator() }
+            val groupingSep = remember { groupingSeparator() }
 
             var currencies by remember { mutableStateOf<List<Currency>>(emptyList()) }
             var currenciesError by remember { mutableStateOf<String?>(null) }
@@ -87,7 +89,7 @@ fun App(repository: CurrencyRepository) {
                 }
             }
 
-            val amount = amountText.toDoubleOrNull()
+            val amount = parseAmount(amountText)
             val converted = if (amount != null && rateEntry != null) {
                 CurrencyConverter.convert(amount, rateEntry!!.rate)
             } else {
@@ -132,6 +134,8 @@ fun App(repository: CurrencyRepository) {
                             toCode = toCode,
                             amountText = amountText,
                             onAmountChange = { amountText = it },
+                            decimalSeparator = decimalSep,
+                            groupingSeparator = groupingSep,
                             isLoadingRate = isLoadingRate,
                             rateError = rateError,
                             rateEntry = rateEntry,
@@ -164,6 +168,8 @@ fun App(repository: CurrencyRepository) {
                                     toCode = toCode,
                                     amountText = amountText,
                                     onAmountChange = { amountText = it },
+                                    decimalSeparator = decimalSep,
+                                    groupingSeparator = groupingSep,
                                     isLoadingRate = isLoadingRate,
                                     rateError = rateError,
                                     rateEntry = rateEntry,
@@ -261,6 +267,8 @@ private fun ConversionFields(
     toCode: String,
     amountText: String,
     onAmountChange: (String) -> Unit,
+    decimalSeparator: Char,
+    groupingSeparator: Char,
     isLoadingRate: Boolean,
     rateError: String?,
     rateEntry: RateEntry?,
@@ -280,6 +288,9 @@ private fun ConversionFields(
             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = ibmPlexMonoFamily()),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            visualTransformation = remember(decimalSeparator, groupingSeparator) {
+                ThousandsVisualTransformation(decimalSeparator, groupingSeparator)
+            },
             shape = RoundedCornerShape(4.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = BrandColors.line,

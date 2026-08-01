@@ -19,10 +19,11 @@ Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android 
 - `composeApp/src/commonMain` — shared code: `CurrencyApi.kt` (fetches the currency list and
   rates from `currency.bscharbau.com` via Ktor), `NetworkRetry.kt` (the retry policy — see Network
   retries below), `CurrencyRepository.kt` (combines the API with the local SQLDelight cache — see
-  Persistence below), `CurrencyConverter.kt` (the pure conversion math), `Theme.kt` (brand
-  colors/typography), `SignalDivider.kt` (the zigzag divider graphic), `db/DatabaseDriverFactory.kt`
-  (`expect` declaration for the platform SQLite driver), and `App.kt` (the Compose UI, including
-  the from/to currency pickers).
+  Persistence below), `CurrencyConverter.kt` (the pure conversion math), `AmountFormatting.kt`
+  (locale-aware parsing/display for the amount field — see Amount formatting below), `Theme.kt`
+  (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic),
+  `db/DatabaseDriverFactory.kt` (`expect` declaration for the platform SQLite driver), and `App.kt`
+  (the Compose UI, including the from/to currency pickers).
 - `composeApp/src/commonMain/sqldelight` — the SQL schema (`Currency.sq`, `Rate.sq`) SQLDelight
   generates the typed `AppDatabase` API from.
 - `composeApp/src/androidMain` — `MainActivity.kt` (constructs the database with
@@ -73,6 +74,25 @@ The currency list follows a simpler rule via `CurrencyRepository.currencies()`: 
 cached at all, it's used with no network call; the API is only hit when the local cache is
 completely empty (effectively: first launch, or after clearing the app's storage). Unlike rates,
 there's no day-based staleness check — once cached, the list is never refreshed again on its own.
+
+## Amount formatting
+
+The amount field's numeric keyboard (`KeyboardType.Decimal`) commonly offers both `.` and `,` as
+candidate keys regardless of the device's actual locale (confirmed on an AOSP keyboard) — so
+`parseAmount()` in `AmountFormatting.kt` accepts either character as "the" decimal point rather
+than requiring an exact match against the locale's own separator, which would otherwise reject
+perfectly reasonable input whenever the keyboard and locale don't happen to agree.
+
+What *is* locale-aware is the display: `ThousandsVisualTransformation` groups the integer part into
+chunks of three using the device's grouping separator and renders the decimal point using its
+decimal glyph (e.g. `1,234,567.89` for en-US, `1.234.567,89` for de-DE) — without changing what's
+actually stored as the field's value, via Compose's `VisualTransformation`/`OffsetMapping`
+mechanism, so parsing stays simple and the cursor still lands in the right place as you type around
+the inserted separators. `decimalSeparator()`/`groupingSeparator()` are `expect`/`actual`: Android
+reads them from `DecimalFormatSymbols.getInstance(Locale.getDefault())`, iOS from
+`NSLocale.currentLocale`. `AmountFormattingTest` covers the grouping and offset-mapping arithmetic
+directly (including the German-style swapped separators) without depending on either platform
+implementation.
 
 ## Design
 
@@ -202,8 +222,9 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
 - Retries are fixed at 3 attempts / 300ms initial backoff, not configurable, and every failure mode
   short of a 4xx gets the same treatment — there's no differentiation between "worth retrying
   aggressively" (a timeout) and "probably won't help" (e.g. a malformed response body).
-- Amount input has no client-side validation beyond `toDoubleOrNull()`; invalid text just shows
-  "Enter a valid amount" rather than proper input filtering.
+- Amount input has no character-level filtering — you can type letters, multiple decimal points,
+  etc. — it just shows "Enter a valid amount" if the result doesn't parse rather than blocking
+  invalid keystrokes as you type.
 
 ## Author
 

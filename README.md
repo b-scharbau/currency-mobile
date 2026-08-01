@@ -93,13 +93,20 @@ app build itself.
 
 ### Layout
 
-`App()` measures the available space with `BoxWithConstraints` and switches between a stacked
-`Column` (intro text above the calculator panel) and a side-by-side `Row` (intro text and panel as
-two equal-width columns) based on whether the window is wider than it is tall — landscape on a
-phone, practically. This isn't an Android-specific orientation check; it's a plain width-vs-height
-comparison, so it works the same way on iOS. The switch exists because the stacked layout's content
-(especially the RATE row at the bottom of the panel) doesn't fit within a phone's much shorter
-landscape height — spreading it across two columns needs less vertical space per column instead.
+`App()` measures the available space with `BoxWithConstraints` and switches between two
+arrangements based on whether the window is wider than it is tall — landscape on a phone,
+practically (a plain width-vs-height comparison, not an Android-specific orientation check, so it
+works the same way on iOS):
+
+- **Portrait**: hero text, then the panel with `CurrencySelection` (FROM/TO/swap) stacked above
+  `ConversionFields` (amount/result/rate) — one column, top to bottom.
+- **Landscape**: one row, two columns — hero text and `CurrencySelection` together on the left,
+  `ConversionFields` alone on the right.
+
+The switch exists because the portrait arrangement's content (especially the RATE row at the
+bottom) doesn't fit within a phone's much shorter landscape height with everything stacked in one
+column; splitting into two columns needs less vertical space per column instead. Verified on an
+API 35 emulator in both orientations (not just reasoned about) — see below.
 
 ## Building
 
@@ -110,6 +117,28 @@ Requires JDK 17+ and an Android SDK (compileSdk 35). Point `local.properties` at
 ./gradlew :composeApp:assembleDebug       # builds the Android debug APK
 ./gradlew :composeApp:testDebugUnitTest   # runs the shared unit tests
 ```
+
+### Running on an emulator
+
+Needs KVM (`/dev/kvm`), and your user in the `kvm` group (`sudo usermod -aG kvm "$USER"`, then a
+fresh login — or use `sg kvm -c "<command>"` to apply it to one command without logging out):
+
+```sh
+export ANDROID_HOME=/path/to/sdk
+"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+  "platform-tools" "emulator" "system-images;android-35;google_apis;x86_64"
+"$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
+  --name test_phone --package "system-images;android-35;google_apis;x86_64" --device "pixel_6"
+sg kvm -c "$ANDROID_HOME/emulator/emulator -avd test_phone -no-window -no-audio -gpu swiftshader_indirect" &
+
+adb install -r -t composeApp/build/intermediates/apk/debug/composeApp-debug.apk
+adb shell am start -n com.bscharbau.currencymobile/.MainActivity
+```
+
+To force landscape without physically rotating anything (useful for a headless `-no-window`
+emulator): `adb shell settings put system accelerometer_rotation 0 && adb shell settings put
+system user_rotation 1` (`0` for back to portrait). Screenshot with `adb exec-out screencap -p >
+screenshot.png`.
 
 ### iOS
 

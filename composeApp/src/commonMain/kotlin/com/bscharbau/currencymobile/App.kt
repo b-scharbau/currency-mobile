@@ -90,59 +90,87 @@ fun App(repository: CurrencyRepository) {
             }
 
             // A wide/short window (landscape on a phone, or any wide window) doesn't have room to
-            // stack the intro text above the calculator panel without the panel's lower rows
-            // (RATE especially) running past the bottom of the screen — so place them side by
-            // side instead of changing the content itself.
+            // stack everything in one column without the panel's lower rows (RATE especially)
+            // running past the bottom of the screen — so it's arranged as two columns instead:
+            // hero text + currency selection on the left, the conversion fields on the right.
             BoxWithConstraints(modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp)) {
                 val isWide = maxWidth > maxHeight
+                val onSwap: () -> Unit = {
+                    val previousFrom = fromCode
+                    fromCode = toCode
+                    toCode = previousFrom
+                }
 
                 if (isWide) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                        HeroContent(rateDate = rateDate, modifier = Modifier.weight(1f))
-                        CalculatorPanel(
-                            fromCode = fromCode,
-                            toCode = toCode,
-                            currencies = currencies,
-                            currenciesError = currenciesError,
-                            amountText = amountText,
-                            onAmountChange = { amountText = it },
-                            onFromSelect = { fromCode = it },
-                            onToSelect = { toCode = it },
-                            onSwap = {
-                                val previousFrom = fromCode
-                                fromCode = toCode
-                                toCode = previousFrom
-                            },
-                            isLoadingRate = isLoadingRate,
-                            rateError = rateError,
-                            rateEntry = rateEntry,
-                            converted = converted,
-                            modifier = Modifier.weight(1f),
-                        )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = BrandColors.paper,
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(1.dp, BrandColors.line),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(28.dp),
+                            horizontalArrangement = Arrangement.spacedBy(32.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                HeroContent(rateDate = rateDate, modifier = Modifier.padding(bottom = 28.dp))
+                                CurrencySelection(
+                                    fromCode = fromCode,
+                                    toCode = toCode,
+                                    currencies = currencies,
+                                    currenciesError = currenciesError,
+                                    onFromSelect = { fromCode = it },
+                                    onToSelect = { toCode = it },
+                                    onSwap = onSwap,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                            ConversionFields(
+                                fromCode = fromCode,
+                                toCode = toCode,
+                                amountText = amountText,
+                                onAmountChange = { amountText = it },
+                                isLoadingRate = isLoadingRate,
+                                rateError = rateError,
+                                rateEntry = rateEntry,
+                                converted = converted,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 } else {
                     Column {
                         HeroContent(rateDate = rateDate, modifier = Modifier.padding(bottom = 28.dp))
-                        CalculatorPanel(
-                            fromCode = fromCode,
-                            toCode = toCode,
-                            currencies = currencies,
-                            currenciesError = currenciesError,
-                            amountText = amountText,
-                            onAmountChange = { amountText = it },
-                            onFromSelect = { fromCode = it },
-                            onToSelect = { toCode = it },
-                            onSwap = {
-                                val previousFrom = fromCode
-                                fromCode = toCode
-                                toCode = previousFrom
-                            },
-                            isLoadingRate = isLoadingRate,
-                            rateError = rateError,
-                            rateEntry = rateEntry,
-                            converted = converted,
+                        Surface(
                             modifier = Modifier.fillMaxWidth(),
-                        )
+                            color = BrandColors.paper,
+                            shape = RoundedCornerShape(4.dp),
+                            border = BorderStroke(1.dp, BrandColors.line),
+                        ) {
+                            Column(modifier = Modifier.padding(28.dp)) {
+                                CurrencySelection(
+                                    fromCode = fromCode,
+                                    toCode = toCode,
+                                    currencies = currencies,
+                                    currenciesError = currenciesError,
+                                    onFromSelect = { fromCode = it },
+                                    onToSelect = { toCode = it },
+                                    onSwap = onSwap,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                ConversionFields(
+                                    fromCode = fromCode,
+                                    toCode = toCode,
+                                    amountText = amountText,
+                                    onAmountChange = { amountText = it },
+                                    isLoadingRate = isLoadingRate,
+                                    rateError = rateError,
+                                    rateEntry = rateEntry,
+                                    converted = converted,
+                                    modifier = Modifier.fillMaxWidth().padding(top = 22.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -180,133 +208,134 @@ private fun HeroContent(rateDate: String?, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CalculatorPanel(
+private fun CurrencySelection(
     fromCode: String,
     toCode: String,
     currencies: List<Currency>,
     currenciesError: String?,
-    amountText: String,
-    onAmountChange: (String) -> Unit,
     onFromSelect: (String) -> Unit,
     onToSelect: (String) -> Unit,
     onSwap: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        if (currenciesError != null) {
+            Text(
+                text = currenciesError,
+                fontFamily = ibmPlexMonoFamily(),
+                color = BrandColors.error,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            CurrencyPicker(
+                label = "FROM",
+                selected = fromCode,
+                currencies = currencies,
+                onSelect = onFromSelect,
+                modifier = Modifier.weight(1f),
+            )
+
+            SwapButton(onClick = onSwap)
+
+            CurrencyPicker(
+                label = "TO",
+                selected = toCode,
+                currencies = currencies,
+                onSelect = onToSelect,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConversionFields(
+    fromCode: String,
+    toCode: String,
+    amountText: String,
+    onAmountChange: (String) -> Unit,
     isLoadingRate: Boolean,
     rateError: String?,
     rateEntry: RateEntry?,
     converted: Double?,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier,
-        color = BrandColors.paper,
-        shape = RoundedCornerShape(4.dp),
-        border = BorderStroke(1.dp, BrandColors.line),
-    ) {
-        Column(modifier = Modifier.padding(28.dp)) {
-            if (currenciesError != null) {
-                Text(
-                    text = currenciesError,
-                    fontFamily = ibmPlexMonoFamily(),
-                    color = BrandColors.error,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
-            }
+    Column(modifier = modifier) {
+        Text(
+            text = "AMOUNT ($fromCode)",
+            style = MaterialTheme.typography.labelMedium,
+            color = BrandColors.muted,
+        )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                CurrencyPicker(
-                    label = "FROM",
-                    selected = fromCode,
-                    currencies = currencies,
-                    onSelect = onFromSelect,
-                    modifier = Modifier.weight(1f),
-                )
+        OutlinedTextField(
+            value = amountText,
+            onValueChange = onAmountChange,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = ibmPlexMonoFamily()),
+            singleLine = true,
+            shape = RoundedCornerShape(4.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = BrandColors.line,
+                focusedBorderColor = BrandColors.signal,
+                unfocusedContainerColor = BrandColors.paper,
+                focusedContainerColor = BrandColors.paper,
+            ),
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 22.dp),
+        )
 
-                SwapButton(onClick = onSwap)
+        HorizontalDivider(color = BrandColors.line)
 
-                CurrencyPicker(
-                    label = "TO",
-                    selected = toCode,
-                    currencies = currencies,
-                    onSelect = onToSelect,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
+        Column(modifier = Modifier.padding(top = 22.dp)) {
             Text(
-                text = "AMOUNT ($fromCode)",
+                text = "RESULT",
                 style = MaterialTheme.typography.labelMedium,
                 color = BrandColors.muted,
-                modifier = Modifier.padding(top = 22.dp),
             )
-
-            OutlinedTextField(
-                value = amountText,
-                onValueChange = onAmountChange,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(fontFamily = ibmPlexMonoFamily()),
-                singleLine = true,
-                shape = RoundedCornerShape(4.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = BrandColors.line,
-                    focusedBorderColor = BrandColors.signal,
-                    unfocusedContainerColor = BrandColors.paper,
-                    focusedContainerColor = BrandColors.paper,
-                ),
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 22.dp),
-            )
-
-            HorizontalDivider(color = BrandColors.line)
-
-            Column(modifier = Modifier.padding(top = 22.dp)) {
-                Text(
-                    text = "RESULT",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = BrandColors.muted,
+            when {
+                isLoadingRate -> CircularProgressIndicator(
+                    color = BrandColors.signal,
+                    modifier = Modifier.padding(top = 8.dp).size(20.dp),
                 )
-                when {
-                    isLoadingRate -> CircularProgressIndicator(
-                        color = BrandColors.signal,
-                        modifier = Modifier.padding(top = 8.dp).size(20.dp),
-                    )
-                    rateError != null -> Text(
-                        text = rateError,
-                        fontFamily = ibmPlexMonoFamily(),
-                        color = BrandColors.error,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                    else -> Text(
-                        text = if (converted != null) {
-                            "$amountText $fromCode = ${formatAmount(converted)} $toCode"
-                        } else {
-                            "Enter a valid amount"
-                        },
-                        fontFamily = ibmPlexMonoFamily(),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 17.sp,
-                        color = BrandColors.ink,
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.padding(top = 18.dp)) {
-                Text(
-                    text = "RATE",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = BrandColors.muted,
-                )
-                Text(
-                    text = rateEntry?.let { "1 $fromCode = ${formatRate(it.rate)} $toCode" } ?: "—",
+                rateError != null -> Text(
+                    text = rateError,
                     fontFamily = ibmPlexMonoFamily(),
-                    fontSize = 14.sp,
-                    color = BrandColors.muted,
+                    color = BrandColors.error,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                else -> Text(
+                    text = if (converted != null) {
+                        "$amountText $fromCode = ${formatAmount(converted)} $toCode"
+                    } else {
+                        "Enter a valid amount"
+                    },
+                    fontFamily = ibmPlexMonoFamily(),
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 17.sp,
+                    color = BrandColors.ink,
+                    textAlign = TextAlign.Start,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
+        }
+
+        Column(modifier = Modifier.padding(top = 18.dp)) {
+            Text(
+                text = "RATE",
+                style = MaterialTheme.typography.labelMedium,
+                color = BrandColors.muted,
+            )
+            Text(
+                text = rateEntry?.let { "1 $fromCode = ${formatRate(it.rate)} $toCode" } ?: "—",
+                fontFamily = ibmPlexMonoFamily(),
+                fontSize = 14.sp,
+                color = BrandColors.muted,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

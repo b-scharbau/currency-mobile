@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark-mode equivalent of BrandColors.paper in Theme.kt (the general window/content
+         background) — kept in sync manually. `signal` (the splash screen background) is
+         intentionally NOT overridden here: it stays the same darker teal in both themes, since
+         that gives better contrast against the splash glyph's fixed light color than the
+         brighter dark-mode accent would. -->
+    <color name="paper">#14202B</color>
+</resources>

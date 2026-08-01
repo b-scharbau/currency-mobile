@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Style resources don't merge across configuration qualifiers — this must repeat every
+         item from the base AppTheme (values/themes.xml), not just the ones that differ, or the
+         missing items would silently fall back to the platform default in dark mode. -->
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:windowSplashScreenBackground">@color/signal</item>
+    </style>
+</resources>

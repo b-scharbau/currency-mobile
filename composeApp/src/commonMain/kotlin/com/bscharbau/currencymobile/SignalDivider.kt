@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun SignalDivider(modifier: Modifier = Modifier, blips: Int = 4) {
+    val signalColor = BrandColors.signal
     Canvas(modifier = modifier.fillMaxWidth().height(28.dp)) {
         val midY = size.height / 2f
         val spikeUpY = size.height * 0.05f
@@ -47,7 +48,7 @@ fun SignalDivider(modifier: Modifier = Modifier, blips: Int = 4) {
 
         drawPath(
             path = path,
-            color = BrandColors.signal,
+            color = signalColor,
             alpha = 0.6f,
             style = Stroke(width = 1.4.dp.toPx()),
         )

@@ -96,6 +96,27 @@ foreground/background layers under `composeApp/src/androidMain/res/mipmap-*`. Re
 after changing the design; `graphics/icon-512.png` is a plain reference render, not used by the
 app build itself.
 
+### Dark mode
+
+The web app has no dark mode yet, so there's no upstream palette to mirror — `Theme.kt` defines its
+own `DarkBrandPalette` alongside `LightBrandPalette`, keeping the same hues (paper/ink swapped,
+`signal`/`error` brightened so they still meet contrast against the dark background). Both are
+plain `BrandPalette` data classes; `CurrencyMobileTheme` picks one via `isSystemInDarkTheme()` and
+provides it through a `CompositionLocal`, with `BrandColors.paper`/`.ink`/etc. as thin `@Composable`
+getters over it — so the ~30 existing `BrandColors.xxx` call sites throughout `App.kt` needed no
+changes to become theme-aware. (The one exception: `SignalDivider`'s `Canvas` draw lambda isn't a
+composable context, so it resolves `BrandColors.signal` to a local `val` just before entering
+`Canvas` rather than reading it inside the draw block.)
+
+On Android, `MainActivity` re-evaluates `isSystemInDarkTheme()` on every recomposition and flips
+`isAppearanceLightStatusBars`/`isAppearanceLightNavigationBars` to match, so the status/navigation
+bar icons stay legible against the edge-to-edge background in both themes, including if the system
+theme changes while the app is open (e.g. an auto dark-mode schedule). The native splash screen
+(see Splash screen below) intentionally does *not* follow the theme — `values-night/colors.xml`
+overrides `paper` (the general window background) but not `signal` (the splash background), since
+the darker teal gives better contrast against the splash glyph's fixed light color than the
+brighter dark-mode accent would.
+
 ### Layout
 
 `App()` measures the available space with `BoxWithConstraints` and switches between two

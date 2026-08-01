@@ -80,12 +80,14 @@ font/` (sourced from the IBM/Google Fonts and Space Grotesk upstream repos; OFL 
 `licenses/`), since only static per-weight files are reliably supported for text styling across
 both Android and iOS in Compose Multiplatform.
 
-The app icon (a double-arrow "exchange" glyph — the same motif as the in-app swap button — on the
-brand's signal-teal background) is generated programmatically by
-`graphics/gen_icons.py` (Pillow) rather than hand-drawn, covering both the legacy per-density
-`ic_launcher`/`ic_launcher_round` PNGs and the API 26+ adaptive icon foreground/background layers
-under `composeApp/src/androidMain/res/mipmap-*`. Re-run that script after changing the design;
-`graphics/icon-512.png` is a plain reference render, not used by the app build itself.
+The app icon (the "signal divider" zigzag from the web design system — see `SignalDivider.kt` and
+`.signal-divider` in the web app's `frontend/src/styles.css` — on the brand's signal-teal
+background, simplified to two blips for legibility at launcher-icon sizes) is generated
+programmatically by `graphics/gen_icons.py` (Pillow) rather than hand-drawn, covering both the
+legacy per-density `ic_launcher`/`ic_launcher_round` PNGs and the API 26+ adaptive icon
+foreground/background layers under `composeApp/src/androidMain/res/mipmap-*`. Re-run that script
+after changing the design; `graphics/icon-512.png` is a plain reference render, not used by the
+app build itself.
 
 ## Building
 

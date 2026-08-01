@@ -16,19 +16,22 @@ PROJECT_ROOT = os.path.dirname(GRAPHICS)
 RES = os.path.join(PROJECT_ROOT, "composeApp", "src", "androidMain", "res")
 
 
-# Glyph defined in a normalized 100x100 unit space: two opposing horizontal arrows
-# (mirroring the in-app swap button's "exchange" glyph), well within the adaptive icon's
-# inner safe zone (~66% of canvas, i.e. roughly the [17,83] range here).
-def glyph_polygons():
-    top_shaft = [(26, 35), (62, 35), (62, 41), (26, 41)]
-    top_head = [(62, 29), (78, 38), (62, 47)]
-    bottom_shaft = [(38, 59), (74, 59), (74, 65), (38, 65)]
-    bottom_head = [(38, 53), (22, 62), (38, 71)]
-    return [top_shaft, top_head, bottom_shaft, bottom_head]
+# Glyph defined in a normalized 100x100 unit space: the "signal divider" zigzag from the web
+# design system (SignalDivider.kt / .signal-divider in frontend/src/styles.css) — a flat line
+# with periodic sharp spikes, evoking a frequency/heartbeat signal. Simplified to two blips
+# (the web version uses four across a much wider aspect ratio) so it reads clearly at the small
+# sizes launcher icons render at. Stays within the adaptive icon's inner safe zone (~66% of
+# canvas, i.e. roughly the [17,83] range here).
+def glyph_points():
+    return [
+        (15, 50),
+        (32, 50), (38, 32), (44, 68), (50, 50),
+        (67, 50), (73, 32), (79, 68), (85, 50),
+    ]
 
 
-def scale_poly(poly, size):
-    return [(x / 100 * size, y / 100 * size) for x, y in poly]
+def scale_points(points, size):
+    return [(x / 100 * size, y / 100 * size) for x, y in points]
 
 
 def make_foreground(size, canvas_scale=1.0):
@@ -37,11 +40,16 @@ def make_foreground(size, canvas_scale=1.0):
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     cx = cy = size / 2
-    for poly in glyph_polygons():
-        scaled = scale_poly(poly, size)
-        if canvas_scale != 1.0:
-            scaled = [(cx + (x - cx) * canvas_scale, cy + (y - cy) * canvas_scale) for x, y in scaled]
-        draw.polygon(scaled, fill=PAPER)
+    points = scale_points(glyph_points(), size)
+    if canvas_scale != 1.0:
+        points = [(cx + (x - cx) * canvas_scale, cy + (y - cy) * canvas_scale) for x, y in points]
+    width = round(size * 0.09)
+    draw.line(points, fill=PAPER, width=width, joint="curve")
+    # `joint="curve"` rounds internal joins but not the two end caps — draw small circles there
+    # so the stroke ends match the same rounded look instead of being cut off square.
+    radius = width / 2
+    for x, y in (points[0], points[-1]):
+        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=PAPER)
     return img
 
 

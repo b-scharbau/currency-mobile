@@ -1,7 +1,7 @@
 # Currency Mobile
 
-A Kotlin Multiplatform + Compose Multiplatform mobile app for converting between JPY and EUR,
-bidirectionally, using live rates fetched from the
+A Kotlin Multiplatform + Compose Multiplatform mobile app for converting between currencies,
+using live rates and the full currency list fetched from the
 [currency-calculator](https://github.com/b-scharbau/currency-calculator) API
 (`currency.bscharbau.com`).
 
@@ -9,10 +9,10 @@ bidirectionally, using live rates fetched from the
 
 Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android and iOS:
 
-- `composeApp/src/commonMain` — shared code: `CurrencyApi.kt` (fetches rates from
-  `currency.bscharbau.com/currency?code=` via Ktor), `CurrencyConverter.kt` (the pure conversion
-  math and direction handling), `Theme.kt` (brand colors/typography), `SignalDivider.kt` (the
-  zigzag divider graphic), and `App.kt` (the Compose UI).
+- `composeApp/src/commonMain` — shared code: `CurrencyApi.kt` (fetches the currency list and
+  rates from `currency.bscharbau.com` via Ktor), `CurrencyConverter.kt` (the pure conversion
+  math), `Theme.kt` (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic),
+  and `App.kt` (the Compose UI, including the from/to currency pickers).
 - `composeApp/src/androidMain` — `MainActivity.kt`, the Android entry point.
 - `composeApp/src/iosMain` — `MainViewController.kt`, exposing the shared Compose UI as a
   `UIViewController` for iOS.
@@ -52,7 +52,8 @@ device), calling `MainViewController()` from a SwiftUI/UIKit wrapper.
 
 ## Known limitations (first version)
 
-- Only the JPY/EUR pair (swappable in either direction); no arbitrary currency selection UI yet.
-- No caching — a fresh `/currency?code=` request is made every time the direction changes (the
-  web frontend's approach), rather than persisting rates across app launches.
+- No caching — a fresh `/currency?code=` request is made every time the "from" or "to" currency
+  changes (the web frontend's approach), rather than persisting rates across app launches.
 - No retry logic on network failure — a failed request just shows an error message.
+- Amount input has no client-side validation beyond `toDoubleOrNull()`; invalid text just shows
+  "Enter a valid amount" rather than proper input filtering.

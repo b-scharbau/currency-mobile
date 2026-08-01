@@ -16,16 +16,17 @@ using live rates and the full currency list fetched from the
 
 Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android and iOS:
 
-- `composeApp/src/commonMain` — shared code: `CurrencyApi.kt` (fetches the currency list and
-  rates from `currency.bscharbau.com` via Ktor), `NetworkRetry.kt` (the retry policy — see Network
-  retries below), `CurrencyRepository.kt` (combines the API with the local SQLDelight cache — see
-  Persistence below), `CurrencyConverter.kt` (the pure conversion math), `AmountFormatting.kt`
-  (locale-aware parsing/display for the amount field — see Amount formatting below), `Theme.kt`
-  (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic), and
-  `db/DatabaseDriverFactory.kt` (`expect` declaration for the platform SQLite driver).
-- `composeApp/src/commonMain/.../ui` — the Compose UI, one composable per file: `App.kt` (state,
-  effects, and the portrait/landscape layout switch — see Layout below), `HeroContent.kt`,
-  `CurrencySelection.kt`, `ConversionFields.kt`, `CurrencyPicker.kt`, `SwapButton.kt`.
+- `composeApp/src/commonMain` — shared code: `App.kt` (root composable: state, effects, and the
+  portrait/landscape layout switch — see Layout below), `CurrencyApi.kt` (fetches the currency
+  list and rates from `currency.bscharbau.com` via Ktor), `NetworkRetry.kt` (the retry policy —
+  see Network retries below), `CurrencyRepository.kt` (combines the API with the local SQLDelight
+  cache — see Persistence below), `CurrencyConverter.kt` (the pure conversion math),
+  `AmountFormatting.kt` (locale-aware parsing/display for the amount field — see Amount formatting
+  below), `Theme.kt` (brand colors/typography), `SignalDivider.kt` (the zigzag divider graphic),
+  and `db/DatabaseDriverFactory.kt` (`expect` declaration for the platform SQLite driver).
+- `composeApp/src/commonMain/.../ui` — the rest of the Compose UI that `App()` composes, one
+  composable per file: `HeroContent.kt`, `CurrencySelection.kt`, `ConversionFields.kt`,
+  `CurrencyPicker.kt`, `SwapButton.kt`.
 - `composeApp/src/commonMain/composeResources` — `font/` (bundled TTFs, see Design below) and
   `values{,-de,-ja}/strings.xml` (localized UI text, see UI localization below).
 - `composeApp/src/commonMain/sqldelight` — the SQL schema (`Currency.sq`, `Rate.sq`) SQLDelight

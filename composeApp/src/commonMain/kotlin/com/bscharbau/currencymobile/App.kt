@@ -1,4 +1,4 @@
-package com.bscharbau.currencymobile.ui
+package com.bscharbau.currencymobile
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -23,15 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.bscharbau.currencymobile.BrandColors
-import com.bscharbau.currencymobile.Currency
-import com.bscharbau.currencymobile.CurrencyConverter
-import com.bscharbau.currencymobile.CurrencyMobileTheme
-import com.bscharbau.currencymobile.CurrencyRepository
-import com.bscharbau.currencymobile.RateEntry
-import com.bscharbau.currencymobile.decimalSeparator
-import com.bscharbau.currencymobile.groupingSeparator
-import com.bscharbau.currencymobile.parseAmount
+import com.bscharbau.currencymobile.ui.ConversionFields
+import com.bscharbau.currencymobile.ui.CurrencySelection
+import com.bscharbau.currencymobile.ui.HeroContent
 
 @Composable
 fun App(repository: CurrencyRepository) {

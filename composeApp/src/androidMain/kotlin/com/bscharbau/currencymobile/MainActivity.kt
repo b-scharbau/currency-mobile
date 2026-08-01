@@ -9,7 +9,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.bscharbau.currencymobile.db.AppDatabase
 import com.bscharbau.currencymobile.db.DatabaseDriverFactory
-import com.bscharbau.currencymobile.ui.App
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

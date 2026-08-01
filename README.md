@@ -113,11 +113,14 @@ API 35 emulator in both orientations (not just reasoned about) — see below.
 ### Splash screen
 
 The Android launch screen (shown before Compose's first frame renders) is styled via `AppTheme` in
-`composeApp/src/androidMain/res/values/themes.xml`, which sets both `android:windowBackground` and
-`android:windowSplashScreenBackground` to `@color/paper` (`composeApp/src/androidMain/res/values/
-colors.xml`, kept in sync with `BrandColors.paper` in `Theme.kt` by hand) — otherwise both default
-to plain system white. `AndroidManifest.xml`'s `<application>` tag points at `@style/AppTheme`
-instead of a raw platform theme so this takes effect.
+`composeApp/src/androidMain/res/values/themes.xml`: `android:windowBackground` (the app's general
+content background) is `@color/paper`, while `android:windowSplashScreenBackground` (the Android
+12+/API 31+ splash screen specifically) is `@color/signal` — the same brand teal the launcher icon
+sits on, so the launch screen reads as a deliberate brand moment rather than a blank content frame.
+Both colors (`composeApp/src/androidMain/res/values/colors.xml`) are kept in sync by hand with
+`BrandColors.paper`/`.signal` in `Theme.kt`. Without an explicit theme, both default to plain
+system white; `AndroidManifest.xml`'s `<application>` tag points at `@style/AppTheme` instead of a
+raw platform theme so this takes effect.
 
 ## Building
 

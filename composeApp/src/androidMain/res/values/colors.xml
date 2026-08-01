@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- BrandColors.paper in Theme.kt — kept in sync manually since Android resources and
-         Compose color constants aren't shared automatically. -->
+    <!-- BrandColors.paper/.signal in Theme.kt — kept in sync manually since Android resources
+         and Compose color constants aren't shared automatically. -->
     <color name="paper">#F7F6F3</color>
+    <color name="signal">#2B6E68</color>
 </resources>

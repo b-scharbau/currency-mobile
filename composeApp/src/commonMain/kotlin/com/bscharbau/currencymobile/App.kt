@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -20,6 +21,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,12 +39,42 @@ fun App() {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             var amountText by remember { mutableStateOf("1") }
             var direction by remember { mutableStateOf(CurrencyConverter.Direction.JpyToEur) }
+            val api = remember { CurrencyApi() }
+
+            var rateEntry by remember { mutableStateOf<RateEntry?>(null) }
+            var rateDate by remember { mutableStateOf<String?>(null) }
+            var isLoading by remember { mutableStateOf(true) }
+            var errorMessage by remember { mutableStateOf<String?>(null) }
 
             val fromCurrency = CurrencyConverter.fromCurrency(direction)
             val toCurrency = CurrencyConverter.toCurrency(direction)
+
+            LaunchedEffect(direction) {
+                isLoading = true
+                errorMessage = null
+                rateEntry = null
+                try {
+                    val rates = api.fetchRates(fromCurrency)
+                    val entry = rates.rates.firstOrNull { it.to == toCurrency }
+                    if (entry == null) {
+                        errorMessage = "No rate found for $fromCurrency → $toCurrency"
+                    } else {
+                        rateEntry = entry
+                        rateDate = rates.date
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "Could not load rates: ${e.message ?: "unknown error"}"
+                } finally {
+                    isLoading = false
+                }
+            }
+
             val amount = amountText.toDoubleOrNull()
-            val converted = amount?.let { CurrencyConverter.convert(it, direction) }
-            val rate = CurrencyConverter.rate(direction)
+            val converted = if (amount != null && rateEntry != null) {
+                CurrencyConverter.convert(amount, rateEntry!!.rate)
+            } else {
+                null
+            }
 
             Column(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -63,8 +95,8 @@ fun App() {
                 )
 
                 Text(
-                    text = "A fixed JPY/EUR rate for now — this will use live Frankfurter rates " +
-                        "once connected to the currency-calculator API.",
+                    text = "Rates are fetched from the currency-calculator API" +
+                        (rateDate?.let { ", as of $it" } ?: "") + ".",
                     style = MaterialTheme.typography.bodyMedium,
                     color = BrandColors.muted,
                     modifier = Modifier.padding(bottom = 20.dp),
@@ -121,19 +153,31 @@ fun App() {
                                 style = MaterialTheme.typography.labelMedium,
                                 color = BrandColors.muted,
                             )
-                            Text(
-                                text = if (converted != null) {
-                                    "$amountText $fromCurrency = ${formatAmount(converted)} $toCurrency"
-                                } else {
-                                    "Enter a valid amount"
-                                },
-                                fontFamily = ibmPlexMonoFamily(),
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 17.sp,
-                                color = BrandColors.ink,
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
+                            when {
+                                isLoading -> CircularProgressIndicator(
+                                    color = BrandColors.signal,
+                                    modifier = Modifier.padding(top = 8.dp).size(20.dp),
+                                )
+                                errorMessage != null -> Text(
+                                    text = errorMessage!!,
+                                    fontFamily = ibmPlexMonoFamily(),
+                                    color = BrandColors.error,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                                else -> Text(
+                                    text = if (converted != null) {
+                                        "$amountText $fromCurrency = ${formatAmount(converted)} $toCurrency"
+                                    } else {
+                                        "Enter a valid amount"
+                                    },
+                                    fontFamily = ibmPlexMonoFamily(),
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 17.sp,
+                                    color = BrandColors.ink,
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
                         }
 
                         Column(modifier = Modifier.padding(top = 18.dp)) {
@@ -143,7 +187,8 @@ fun App() {
                                 color = BrandColors.muted,
                             )
                             Text(
-                                text = "1 $fromCurrency = ${formatRate(rate)} $toCurrency",
+                                text = rateEntry?.let { "1 $fromCurrency = ${formatRate(it.rate)} $toCurrency" }
+                                    ?: "—",
                                 fontFamily = ibmPlexMonoFamily(),
                                 fontSize = 14.sp,
                                 color = BrandColors.muted,

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Backs the app's content window in general, and — since unrecognized attributes are
+             just ignored on older platforms rather than erroring — doubles as the Android 12+
+             (API 31+) splash screen background before Compose's first frame renders. Without
+             this, both default to the system's plain white. -->
+        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:windowSplashScreenBackground">@color/paper</item>
+    </style>
+</resources>

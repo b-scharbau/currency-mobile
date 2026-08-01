@@ -110,6 +110,15 @@ bottom) doesn't fit within a phone's much shorter landscape height with everythi
 column; splitting into two columns needs less vertical space per column instead. Verified on an
 API 35 emulator in both orientations (not just reasoned about) — see below.
 
+### Splash screen
+
+The Android launch screen (shown before Compose's first frame renders) is styled via `AppTheme` in
+`composeApp/src/androidMain/res/values/themes.xml`, which sets both `android:windowBackground` and
+`android:windowSplashScreenBackground` to `@color/paper` (`composeApp/src/androidMain/res/values/
+colors.xml`, kept in sync with `BrandColors.paper` in `Theme.kt` by hand) — otherwise both default
+to plain system white. `AndroidManifest.xml`'s `<application>` tag points at `@style/AppTheme`
+instead of a raw platform theme so this takes effect.
+
 ## Building
 
 Requires JDK 17+ and an Android SDK (compileSdk 35). Point `local.properties` at your SDK

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- BrandColors.paper in Theme.kt — kept in sync manually since Android resources and
+         Compose color constants aren't shared automatically. -->
+    <color name="paper">#F7F6F3</color>
+</resources>

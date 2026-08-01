@@ -10,12 +10,23 @@ endpoint.
 Standard Kotlin Multiplatform layout, one `composeApp` module targeting Android and iOS:
 
 - `composeApp/src/commonMain` — shared code: `CurrencyConverter.kt` (the hardcoded conversion
-  logic) and `App.kt` (the Compose UI — a single screen with an amount field and the converted
-  result).
+  logic), `Theme.kt` (brand colors/typography), and `App.kt` (the Compose UI — a single screen
+  with an amount field and the converted result).
 - `composeApp/src/androidMain` — `MainActivity.kt`, the Android entry point.
 - `composeApp/src/iosMain` — `MainViewController.kt`, exposing the shared Compose UI as a
   `UIViewController` for iOS.
 - `composeApp/src/commonTest` — unit tests for the conversion logic.
+
+## Design
+
+Matches the design system from the web app (`currency-calculator`'s `frontend/src/styles.css` /
+bscharbau.com): the same `--paper`/`--ink`/`--signal`/`--muted`/`--line`/`--tint` color tokens
+(see `BrandColors` in `Theme.kt`), Space Grotesk for headlines, IBM Plex Sans for body text, and
+IBM Plex Mono for numeric values (amount, result, rate) — mirroring the web app's `.mono` usage
+for figures. Fonts are bundled as static TTFs under `composeApp/src/commonMain/composeResources/
+font/` (sourced from the IBM/Google Fonts and Space Grotesk upstream repos; OFL license texts in
+`licenses/`), since only static per-weight files are reliably supported for text styling across
+both Android and iOS in Compose Multiplatform.
 
 ## Building
 

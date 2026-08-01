@@ -47,6 +47,10 @@ kotlin {
     }
 }
 
+compose.resources {
+    packageOfResClass = "com.bscharbau.currencymobile.resources"
+}
+
 android {
     namespace = "com.bscharbau.currencymobile"
     compileSdk = 35

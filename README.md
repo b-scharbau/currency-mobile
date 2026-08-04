@@ -7,6 +7,9 @@ using live rates and the full currency list fetched from the
 [currency-calculator](https://github.com/b-scharbau/currency-calculator) API
 (`currency.bscharbau.com`).
 
+[Download the latest Android APK](https://github.com/b-scharbau/currency-mobile/releases/latest)
+(debug build - see `.github/workflows/release.yml`; a signed release build isn't set up yet).
+
 <p>
   <img src="screenshots/portrait.png" alt="Portrait layout: hero text and a bordered panel with currency pickers and conversion fields stacked vertically" width="260">
   <img src="screenshots/landscape.png" alt="Landscape layout: hero text and currency pickers in a left column, conversion fields in a right column, separated by a divider" width="500">
